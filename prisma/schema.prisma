@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum DocStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AgentType {
+  DRAFT
+  REWRITE
+  CHAT
+  SUMMARISE
+}
+
+enum SubStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String?   // null for OAuth users
+  role          Role      @default(USER)
+  plan          Plan      @default(FREE)
+  avatar        String?
+  bio           String?
+  isBanned      Boolean   @default(false)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // soft delete
+
+  accounts      Account[]
+  sessions      Session[]
+  documents     Document[]
+  reviews       Review[]
+  aiHistory     AIUsageHistory[]
+  subscription  Subscription?
+  notifications Notification[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  description    String
+  category       String   // Blog | Social | Email | AdCopy
+  prompt         String   @db.Text
+  sampleOutput   String   @db.Text
+  thumbnail      String?
+  tone           String   // Professional | Casual | Formal | Friendly
+  estimatedWords Int
+  aiModel        String   @default("claude-sonnet")
+  usageCount     Int      @default(0)
+  rating         Float    @default(0)
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  documents Document[]
+  reviews   Review[]
+
+  @@index([category])
+  @@index([isPublished])
+}
+
+model Document {
+  id              String    @id @default(cuid())
+  userId          String
+  templateId      String?
+  title           String
+  content         String    @db.Text
+  metaDescription String?
+  tags            String[]
+  status          DocStatus @default(DRAFT)
+  wordCount       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  user     User      @relation(fields: [userId], references: [id])
+  template Template? @relation(fields: [templateId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  userId     String
+  templateId String
+  rating     Int          // 1–5
+  comment    String       @db.Text
+  status     ReviewStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  template Template @relation(fields: [templateId], references: [id])
+
+  @@index([templateId])
+  @@index([status])
+}
+
+model AIUsageHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  agentType     AgentType
+  promptSnippet String
+  tokensUsed    Int
+  responseTime  Int       // ms
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  plan             Plan
+  status           SubStatus @default(ACTIVE)
+  currentPeriodEnd DateTime
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model SiteSettings {
+  id              String   @id @default("singleton")
+  siteName        String   @default("WriteFlow AI")
+  logoUrl         String?
+  maintenanceMode Boolean  @default(false)
+  draftAgentOn    Boolean  @default(true)
+  rewriteAgentOn  Boolean  @default(true)
+  chatAgentOn     Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+}
