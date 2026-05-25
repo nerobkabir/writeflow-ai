@@ -107,6 +107,43 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+@keyframes ai-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.ai-pulse-dot {
+  animation: ai-pulse 2s ease-in-out infinite;
+}
+
+/* TipTap editor */
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: calc(100vh - 120px);
+}
+
+.tiptap-editor .ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.tiptap-editor .ProseMirror p {
+  font-size: 15px;
+  line-height: 1.75;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-style: italic;
+}
+
 /* PREMIUM CARD STANDARDS */
 .premium-card {
   border-radius: 12px;
