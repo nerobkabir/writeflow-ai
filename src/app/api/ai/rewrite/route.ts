@@ -1,9 +1,5 @@
 import { getAuthUserId } from "@/lib/auth-server";
-import {
-  anthropicSSEToTextStream,
-  createAnthropicStream,
-  getAnthropicApiKey,
-} from "@/lib/anthropic-stream";
+import { createGeminiTextStream, getGeminiApiKey } from "@/lib/gemini-stream";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -15,9 +11,9 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!getAnthropicApiKey()) {
+  if (!getGeminiApiKey()) {
     return new Response(
-      JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured." }),
+      JSON.stringify({ error: "GEMINI_API_KEY is not configured." }),
       { status: 503, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -41,13 +37,11 @@ export async function POST(request: Request) {
   const startTime = Date.now();
 
   try {
-    const upstream = await createAnthropicStream({
+    const textStream = createGeminiTextStream({
       system,
       userPrompt: text,
       maxTokens: 2048,
     });
-
-    const textStream = anthropicSSEToTextStream(upstream.body!);
 
     const stream = new ReadableStream({
       async start(controller) {
