@@ -203,3 +203,31 @@ model SiteSettings {
   chatAgentOn     Boolean  @default(true)
   updatedAt       DateTime @updatedAt
 }
+
+model BlogPost {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  excerpt      String
+  content      String   @db.Text
+  thumbnail    String
+  category     String   // AI Writing | Product | Tutorials | Case Studies
+  published    Boolean  @default(true)
+  authorName   String   @default("WriteFlow Team")
+  authorAvatar String?
+  readTime     String   @default("5 min read")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([published])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+}

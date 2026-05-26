@@ -23,10 +23,18 @@ const footerCols = [
   {
     label: "PRODUCT",
     links: [
-      { label: "Features", href: "/#features" },
+      { label: "Features", href: "/explore" },
       { label: "Pricing", href: "/#pricing" },
       { label: "Templates", href: "/explore" },
       { label: "Changelog", href: "/blog" },
+    ],
+  },
+  {
+    label: "COMPANY",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Blog", href: "/blog" },
+      { label: "Contact", href: "/contact" },
     ],
   },
   {
@@ -39,8 +47,8 @@ const footerCols = [
   {
     label: "RESOURCES",
     links: [
-      { label: "Docs", href: "https://github.com" },
-      { label: "Status", href: "/status" },
+      { label: "Docs", href: "/blog" },
+      { label: "Status", href: "https://status.writeflow.ai", external: true },
     ],
   },
 ];

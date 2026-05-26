@@ -3,11 +3,16 @@ import { formatGeminiError, geminiErrorStatus } from "@/lib/gemini-errors";
 import { generateGeminiText, getGeminiApiKey } from "@/lib/gemini-stream";
 import { prisma } from "@/lib/prisma";
 import { buildRewriteSystemPrompt } from "@/lib/rewrite-prompts";
+import { isAgentEnabled } from "@/lib/site-settings";
 
 export async function POST(request: Request) {
   const userId = await getAuthUserId();
   if (!userId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await isAgentEnabled("rewrite"))) {
+    return Response.json({ error: "This agent is currently disabled" }, { status: 503 });
   }
 
   if (!getGeminiApiKey()) {

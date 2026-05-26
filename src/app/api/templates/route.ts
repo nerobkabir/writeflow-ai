@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { templatesDb } from "@/lib/templates-data";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,9 +10,6 @@ export async function GET(request: Request) {
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "12", 10);
 
-  // Simulated latency for high-quality premium feel loader validation
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
   // Category mapping helper
   // Request uses "Social Media" -> maps to "Social", "Ad Copy" -> maps to "AdCopy"
   let dbCategory = category;
@@ -22,44 +19,63 @@ export async function GET(request: Request) {
     dbCategory = "AdCopy";
   }
 
-  // 1. Filtering
-  let filtered = templatesDb.filter((tpl) => {
-    // Search filter (matches name, title, description, or category keywords)
-    const matchesSearch =
-      search === "" ||
-      tpl.name.toLowerCase().includes(search) ||
-      tpl.description.toLowerCase().includes(search) ||
-      tpl.category.toLowerCase().includes(search);
+  const where = {
+    isPublished: true,
+    ...(search
+      ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+            { category: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(dbCategory && dbCategory.toLowerCase() !== "all"
+      ? { category: { equals: dbCategory, mode: "insensitive" as const } }
+      : {}),
+    ...(rating > 0 ? { rating: { gte: rating } } : {}),
+  };
 
-    // Category filter
-    const matchesCategory =
-      dbCategory === "" ||
-      dbCategory.toLowerCase() === "all" ||
-      tpl.category.toLowerCase() === dbCategory.toLowerCase();
+  const orderBy =
+    sort === "newest"
+      ? { createdAt: "desc" as const }
+      : sort === "highest-rated"
+      ? { rating: "desc" as const }
+      : { usageCount: "desc" as const };
 
-    // Rating filter
-    const matchesRating = tpl.rating >= rating;
+  const [templates, totalCount] = await Promise.all([
+    prisma.template.findMany({
+      where,
+      orderBy,
+      skip: (Math.max(page, 1) - 1) * limit,
+      take: limit,
+    }),
+    prisma.template.count({ where }),
+  ]);
 
-    return matchesSearch && matchesCategory && matchesRating;
-  });
+  const paginated = templates.map((tpl) => ({
+    id: tpl.id,
+    slug: tpl.slug,
+    name: tpl.title,
+    title: tpl.title,
+    description: tpl.description,
+    category: tpl.category,
+    icon:
+      tpl.category === "Blog"
+        ? "FileText"
+        : tpl.category === "Social"
+        ? "Sparkles"
+        : tpl.category === "Email"
+        ? "Cpu"
+        : "Briefcase",
+    isPremium: tpl.aiModel === "gpt-4o",
+    rating: tpl.rating,
+    usageCount: tpl.usageCount,
+    image: tpl.thumbnail || "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200",
+    createdAt: tpl.createdAt.toISOString(),
+  }));
 
-  // 2. Sorting
-  filtered.sort((a, b) => {
-    if (sort === "newest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-    if (sort === "highest-rated") {
-      return b.rating - a.rating;
-    }
-    // "popular" (default)
-    return b.usageCount - a.usageCount;
-  });
-
-  // 3. Pagination calculation
-  const totalCount = filtered.length;
   const totalPages = Math.ceil(totalCount / limit);
-  const startIndex = (page - 1) * limit;
-  const paginated = filtered.slice(startIndex, startIndex + limit);
 
   return NextResponse.json({
     templates: paginated,

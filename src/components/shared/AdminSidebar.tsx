@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 const adminNav = [
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Manage Users", href: "/admin/users", icon: Users },
-  { label: "Manage Templates", href: "/admin/templates", icon: LayoutTemplate },
-  { label: "Manage Reviews", href: "/admin/reviews", icon: Star },
+  { label: "Templates", href: "/admin/templates", icon: LayoutTemplate },
+  { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Site Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -28,7 +28,7 @@ export function AdminSidebar() {
       <div className="flex items-center gap-2 px-4 h-16 border-b border-border shrink-0">
         <Logo />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-background bg-accent px-1.5 py-0.5 rounded-md ml-1">
-          Admin
+          ADMIN
         </span>
       </div>
 

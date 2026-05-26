@@ -4,6 +4,7 @@ import React from "react";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
+import { MaintenanceGuard } from "@/components/shared/MaintenanceGuard";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -22,7 +23,9 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <MaintenanceGuard>
+          {children}
+        </MaintenanceGuard>
         <Toaster 
           position="bottom-right" 
           toastOptions={{

@@ -2,6 +2,7 @@ import { getAuthUserId } from "@/lib/auth-server";
 import { formatGeminiError, geminiErrorStatus } from "@/lib/gemini-errors";
 import { getGeminiApiKey, openGeminiTextStream } from "@/lib/gemini-stream";
 import { prisma } from "@/lib/prisma";
+import { isAgentEnabled } from "@/lib/site-settings";
 
 const META_DELIMITER = "---WRITEFLOW_META---";
 
@@ -19,6 +20,13 @@ export async function POST(request: Request) {
   if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (!(await isAgentEnabled("draft"))) {
+    return new Response(JSON.stringify({ error: "This agent is currently disabled" }), {
+      status: 503,
       headers: { "Content-Type": "application/json" },
     });
   }
