@@ -116,6 +116,31 @@ body {
   animation: ai-pulse 2s ease-in-out infinite;
 }
 
+@keyframes chat-dot-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+.chat-typing-dot {
+  animation: chat-dot-bounce 1s ease-in-out infinite;
+}
+
+@keyframes chat-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.chat-streaming-cursor::after {
+  content: "|";
+  margin-left: 1px;
+  animation: chat-cursor-blink 0.8s step-end infinite;
+  color: var(--muted-foreground);
+}
+
 /* TipTap editor */
 .tiptap-editor .ProseMirror {
   outline: none;

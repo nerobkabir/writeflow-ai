@@ -48,3 +48,26 @@ export async function consumeTextStream(
 
   return null;
 }
+
+/** Consume a plain-text streaming response (no metadata trailer). */
+export async function consumePlainTextStream(
+  response: Response,
+  onDelta: (delta: string) => void
+): Promise<string> {
+  if (!response.body) throw new Error("Empty response stream");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let full = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    full += chunk;
+    if (chunk) onDelta(chunk);
+  }
+
+  return full;
+}

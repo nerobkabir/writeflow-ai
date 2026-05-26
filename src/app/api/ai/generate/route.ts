@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@/lib/auth-server";
-import { createGeminiTextStream, getGeminiApiKey } from "@/lib/gemini-stream";
+import { formatGeminiError, geminiErrorStatus } from "@/lib/gemini-errors";
+import { getGeminiApiKey, openGeminiTextStream } from "@/lib/gemini-stream";
 import { prisma } from "@/lib/prisma";
 
 const META_DELIMITER = "---WRITEFLOW_META---";
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     .join("\n");
 
   try {
-    const textStream = createGeminiTextStream({
+    const { stream: textStream } = await openGeminiTextStream({
       system: SYSTEM_PROMPT,
       userPrompt,
       maxTokens: 4096,
@@ -148,9 +149,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "AI generation failed";
+    const message = formatGeminiError(error);
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status: geminiErrorStatus(error),
       headers: { "Content-Type": "application/json" },
     });
   }

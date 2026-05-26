@@ -10,17 +10,31 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { FormatToolbar } from "@/components/editor/FormatToolbar";
 import { EditorAIPanel } from "@/components/editor/EditorAIPanel";
+import {
+  SelectionFloatingToolbar,
+  type SelectionRect,
+} from "@/components/editor/SelectionFloatingToolbar";
 import type { SaveDisplayStatus } from "@/components/editor/SaveStatusBadge";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { applyRewriteWithCrossfade } from "@/lib/apply-rewrite-crossfade";
 import { consumeTextStream } from "@/lib/ai-stream-client";
 import {
   computeReadabilityScore,
   countWordsFromHtml,
   isEditorContentEmpty,
 } from "@/lib/document-utils";
+import type { RewriteAction, RewriteTone } from "@/lib/rewrite-prompts";
+import { fetchWithTimeout } from "@/lib/fetch-client";
+import { buildDocumentChatContext } from "@/lib/chat-context";
 
 interface EditorPageProps {
   params: Promise<{ id: string }>;
+}
+
+interface SavedSelection {
+  from: number;
+  to: number;
+  text: string;
 }
 
 export default function DocumentEditorPage({ params }: EditorPageProps) {
@@ -44,13 +58,32 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
   const [audience, setAudience] = useState("");
   const [generating, setGenerating] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState(false);
-  const [rewriteLoading, setRewriteLoading] = useState(false);
   const [showGeneratePanel, setShowGeneratePanel] = useState(true);
 
+  const [toolbarVisible, setToolbarVisible] = useState(false);
+  const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
+  const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
+
+  const [rewritePanel, setRewritePanel] = useState({
+    open: false,
+    originalText: "",
+    rewrittenText: "",
+    loading: false,
+  });
+
+  const savedSelectionRef = useRef<SavedSelection | null>(null);
+  const rewriteRequestRef = useRef<{
+    tone?: RewriteTone;
+    action: RewriteAction;
+    optionId: string;
+  } | null>(null);
+
   const lastSavedHtml = useRef(editorHtml);
+  const createInFlight = useRef(false);
   const isDirty = editorHtml !== lastSavedHtml.current;
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Placeholder.configure({
@@ -73,6 +106,58 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
     },
   });
 
+  const updateSelectionToolbar = useCallback(() => {
+    if (!editor || rewritePanel.open) {
+      setToolbarVisible(false);
+      return;
+    }
+
+    const { from, to, empty } = editor.state.selection;
+    if (empty || from === to) {
+      setToolbarVisible(false);
+      setSelectionRect(null);
+      return;
+    }
+
+    const text = editor.state.doc.textBetween(from, to, " ");
+    if (!text.trim()) {
+      setToolbarVisible(false);
+      setSelectionRect(null);
+      return;
+    }
+
+    const domSel = window.getSelection();
+    if (!domSel || domSel.rangeCount === 0) {
+      setToolbarVisible(false);
+      return;
+    }
+
+    const range = domSel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      setToolbarVisible(false);
+      return;
+    }
+
+    setSelectionRect({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+    setToolbarVisible(true);
+    savedSelectionRef.current = { from, to, text };
+  }, [editor, rewritePanel.open]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    editor.on("selectionUpdate", updateSelectionToolbar);
+    return () => {
+      editor.off("selectionUpdate", updateSelectionToolbar);
+    };
+  }, [editor, updateSelectionToolbar]);
+
   const saveDocument = useCallback(
     async (html: string) => {
       if (!documentId) return;
@@ -82,13 +167,17 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
         ? titleMatch[1].replace(/<[^>]+>/g, "").trim()
         : "Untitled Document";
 
-      const res = await fetch(`/api/documents/${documentId}`, {
+      const res = await fetchWithTimeout(`/api/documents/${documentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: html, wordCount: wc, title }),
+        timeoutMs: 12_000,
       });
 
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Save failed");
+      }
       lastSavedHtml.current = html;
       setFilename(`${title.toLowerCase().replace(/\s+/g, "-") || "untitled"}.txt`);
     },
@@ -108,30 +197,62 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
     return "Saved";
   }, [saveState, isDirty]);
 
-  // Create or load document
+  const documentContext = useMemo(
+    () =>
+      buildDocumentChatContext(
+        editorHtml,
+        wordCount,
+        toneLabel,
+        filename.replace(/\.txt$/i, "").replace(/-/g, " ")
+      ),
+    [editorHtml, wordCount, toneLabel, filename]
+  );
+
   useEffect(() => {
     let active = true;
+    setLoading(true);
 
     async function init() {
       try {
         if (paramId === "new") {
-          const res = await fetch("/api/documents", {
+          if (createInFlight.current) {
+            setLoading(false);
+            return;
+          }
+          createInFlight.current = true;
+
+          const res = await fetchWithTimeout("/api/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ templateId, title: "Untitled Document" }),
+            timeoutMs: 12_000,
           });
-          if (!res.ok) throw new Error("Failed to create document");
-          const { document } = await res.json();
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to create document");
+          }
           if (!active) return;
+          if (data.offline && data.message) {
+            toast.info(data.message);
+          }
           const qs = templateId ? `?template=${templateId}` : "";
-          router.replace(`/documents/${document.id}${qs}`);
+          router.replace(`/documents/${data.document.id}${qs}`);
           return;
         }
 
-        const res = await fetch(`/api/documents/${paramId}`);
-        if (!res.ok) throw new Error("Document not found");
-        const { document } = await res.json();
+        const res = await fetchWithTimeout(`/api/documents/${paramId}`, {
+          timeoutMs: 12_000,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Document not found");
+        }
         if (!active) return;
+
+        const { document } = data;
+        if (data.offline && data.message) {
+          toast.info(data.message);
+        }
 
         setDocumentId(document.id);
         setEditorHtml(document.content);
@@ -149,8 +270,8 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
         if (document.template?.prompt) {
           setTemplatePrompt(document.template.prompt);
         }
-      } catch {
-        toast.error("Failed to load document");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to load document");
         router.push("/documents");
       } finally {
         if (active) setLoading(false);
@@ -160,10 +281,10 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
     init();
     return () => {
       active = false;
+      if (paramId === "new") createInFlight.current = false;
     };
   }, [paramId, router, templateId]);
 
-  // Sync editor when document loads
   useEffect(() => {
     if (!editor || loading) return;
     if (editor.getHTML() !== editorHtml) {
@@ -253,60 +374,146 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
     }
   };
 
-  const runRewriteStream = async (mode: "rewrite" | "expand") => {
-    if (!editor) return;
+  const fetchRewrite = useCallback(
+    async (params: {
+      tone?: RewriteTone;
+      action: RewriteAction;
+      optionId: string;
+      originalText: string;
+    }) => {
+      setRewritePanel((prev) => ({
+        ...prev,
+        open: true,
+        originalText: params.originalText,
+        rewrittenText: "",
+        loading: true,
+      }));
+      setToolbarVisible(false);
+      setActiveOptionId(params.optionId);
+      rewriteRequestRef.current = {
+        tone: params.tone,
+        action: params.action,
+        optionId: params.optionId,
+      };
 
-    const { from, to } = editor.state.selection;
-    const selectedText =
-      from !== to
-        ? editor.state.doc.textBetween(from, to, " ")
-        : editor.state.doc.textBetween(
-            Math.max(0, from - 200),
-            Math.min(editor.state.doc.content.size, to + 200),
-            " "
-          );
+      try {
+        const res = await fetch("/api/ai/rewrite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            selectedText: params.originalText,
+            tone: params.tone ?? null,
+            action: params.action,
+          }),
+        });
 
-    if (!selectedText.trim()) {
-      toast.error("Select text in the editor first");
-      return;
-    }
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Rewrite failed");
+        }
 
-    setRewriteLoading(true);
-    setStreamingStatus(true);
-
-    try {
-      const res = await fetch("/api/ai/rewrite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: selectedText, mode }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Rewrite failed");
+        setRewritePanel((prev) => ({
+          ...prev,
+          rewrittenText: data.rewrittenText,
+          loading: false,
+        }));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Rewrite failed");
+        setRewritePanel((prev) => ({
+          ...prev,
+          open: false,
+          loading: false,
+          rewrittenText: "",
+        }));
+        setActiveOptionId(null);
+        if (savedSelectionRef.current && editor) {
+          const { from, to } = savedSelectionRef.current;
+          editor.chain().focus().setTextSelection({ from, to }).run();
+        }
       }
+    },
+    [editor]
+  );
 
-      let result = "";
-      await consumeTextStream(res, (delta) => {
-        result += delta;
-      });
-
-      if (from !== to) {
-        editor.chain().focus().deleteSelection().insertContent(result).run();
-      } else {
-        editor.chain().focus().insertContent(result).run();
+  const handleToolbarSelect = useCallback(
+    (params: { optionId: string; tone?: RewriteTone; action: RewriteAction }) => {
+      const selection = savedSelectionRef.current;
+      if (!selection?.text.trim()) {
+        toast.error("Select text in the editor first");
+        return;
       }
+      fetchRewrite({
+        ...params,
+        originalText: selection.text,
+      });
+    },
+    [fetchRewrite]
+  );
 
-      toast.success(mode === "expand" ? "Thought expanded" : "Selection rewritten");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "AI request failed");
-    } finally {
-      setRewriteLoading(false);
-      setStreamingStatus(false);
+  const restoreSelection = useCallback(() => {
+    if (savedSelectionRef.current && editor) {
+      const { from, to } = savedSelectionRef.current;
+      editor.chain().focus().setTextSelection({ from, to }).run();
     }
+  }, [editor]);
+
+  const handleRewriteBack = () => {
+    setRewritePanel({
+      open: false,
+      originalText: "",
+      rewrittenText: "",
+      loading: false,
+    });
+    setActiveOptionId(null);
+    restoreSelection();
   };
 
-  if (loading || paramId === "new") {
+  const handleRewriteDismiss = () => {
+    handleRewriteBack();
+  };
+
+  const handleRewriteTryAgain = () => {
+    const req = rewriteRequestRef.current;
+    const selection = savedSelectionRef.current;
+    if (!req || !selection) return;
+    fetchRewrite({
+      tone: req.tone,
+      action: req.action,
+      optionId: req.optionId,
+      originalText: selection.text,
+    });
+  };
+
+  const handleRewriteApply = () => {
+    if (!editor || !savedSelectionRef.current || !rewritePanel.rewrittenText) return;
+
+    const { from, to, text } = savedSelectionRef.current;
+    applyRewriteWithCrossfade(
+      editor,
+      from,
+      to,
+      text,
+      rewritePanel.rewrittenText,
+      () => {
+        const html = editor.getHTML();
+        setEditorHtml(html);
+        setWordCount(countWordsFromHtml(html));
+        setReadability(computeReadabilityScore(html));
+      }
+    );
+
+    setRewritePanel({
+      open: false,
+      originalText: "",
+      rewrittenText: "",
+      loading: false,
+    });
+    setActiveOptionId(null);
+    savedSelectionRef.current = null;
+    toast.success("Rewrite applied");
+  };
+
+  if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
         <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -330,7 +537,7 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
         <div className="flex-1 flex overflow-hidden min-h-0">
           <FormatToolbar editor={editor} />
 
-          <div className="flex-1 flex flex-col overflow-hidden bg-background">
+          <div className="flex-1 flex flex-col overflow-hidden bg-background relative">
             <div className="px-8 pt-6 pb-2 shrink-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Content Architecture
@@ -339,6 +546,14 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
             <div className="flex-1 overflow-y-auto px-8 pb-16">
               <EditorContent editor={editor} className="tiptap-editor max-w-3xl" />
             </div>
+
+            <SelectionFloatingToolbar
+              visible={toolbarVisible && !rewritePanel.open}
+              rect={selectionRect}
+              activeOptionId={activeOptionId}
+              onSelect={handleToolbarSelect}
+              onDismiss={() => setToolbarVisible(false)}
+            />
           </div>
 
           <EditorAIPanel
@@ -351,13 +566,16 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
             topic={topic}
             tone={tone}
             audience={audience}
+            documentContext={documentContext}
             onTopicChange={setTopic}
             onToneChange={setTone}
             onAudienceChange={setAudience}
             onGenerate={handleGenerate}
-            onRewrite={() => runRewriteStream("rewrite")}
-            onExpand={() => runRewriteStream("expand")}
-            rewriteLoading={rewriteLoading}
+            rewritePanel={rewritePanel}
+            onRewriteBack={handleRewriteBack}
+            onRewriteApply={handleRewriteApply}
+            onRewriteTryAgain={handleRewriteTryAgain}
+            onRewriteDismiss={handleRewriteDismiss}
           />
         </div>
       </div>

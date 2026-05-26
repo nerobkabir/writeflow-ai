@@ -48,7 +48,7 @@ export function Navbar() {
   const currentNavLinks = isLoggedIn
     ? [
         { label: "Dashboard", href: "/dashboard" },
-        { label: "My Documents", href: "/documents" },
+        { label: "My Documents", href: "/dashboard/documents" },
         { label: "Explore", href: "/explore" },
         { label: "Blog", href: "/blog" },
         { label: "About", href: "/about" },
@@ -150,7 +150,7 @@ export function Navbar() {
                           My Documents
                         </Link>
                         <Link
-                          href="/profile"
+                          href="/dashboard/profile"
                           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-foreground hover:bg-badge transition-colors"
                         >
                           <Settings className="w-4 h-4 text-muted-foreground" />

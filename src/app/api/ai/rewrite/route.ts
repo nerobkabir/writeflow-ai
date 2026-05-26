@@ -1,83 +1,54 @@
 import { getAuthUserId } from "@/lib/auth-server";
-import { createGeminiTextStream, getGeminiApiKey } from "@/lib/gemini-stream";
+import { formatGeminiError, geminiErrorStatus } from "@/lib/gemini-errors";
+import { generateGeminiText, getGeminiApiKey } from "@/lib/gemini-stream";
 import { prisma } from "@/lib/prisma";
+import { buildRewriteSystemPrompt } from "@/lib/rewrite-prompts";
 
 export async function POST(request: Request) {
   const userId = await getAuthUserId();
   if (!userId) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!getGeminiApiKey()) {
-    return new Response(
-      JSON.stringify({ error: "GEMINI_API_KEY is not configured." }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "GEMINI_API_KEY is not configured." },
+      { status: 503 }
     );
   }
 
   const body = await request.json();
-  const text = String(body.text || "").trim();
-  const mode = String(body.mode || "rewrite");
+  const selectedText = String(body.selectedText || body.text || "").trim();
+  const tone = body.tone != null ? String(body.tone).trim() : null;
+  const action = String(body.action || "rewrite").trim();
 
-  if (!text) {
-    return new Response(JSON.stringify({ error: "Text is required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (!selectedText) {
+    return Response.json({ error: "selectedText is required" }, { status: 400 });
   }
-
-  const system =
-    mode === "expand"
-      ? "You are a writing assistant. Expand the given text with more detail, examples, and clarity. Return ONLY the expanded HTML paragraph(s) — use <p> tags, no markdown or explanations."
-      : "You are a writing assistant. Rewrite the given text to be clearer, more decisive, and professionally polished. Return ONLY the rewritten HTML — use <p> tags, no markdown or explanations.";
 
   const startTime = Date.now();
 
   try {
-    const textStream = createGeminiTextStream({
+    const system = buildRewriteSystemPrompt(tone, action);
+    const { text: rewrittenText, tokensUsed } = await generateGeminiText({
       system,
-      userPrompt: text,
+      userPrompt: selectedText,
       maxTokens: 2048,
     });
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = textStream.getReader();
-        let total = "";
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            total += new TextDecoder().decode(value);
-            controller.enqueue(value);
-          }
-          await prisma.aIUsageHistory.create({
-            data: {
-              userId,
-              agentType: "REWRITE",
-              promptSnippet: text.slice(0, 120),
-              tokensUsed: Math.ceil(total.length / 4),
-              responseTime: Date.now() - startTime,
-            },
-          });
-          controller.close();
-        } catch (err) {
-          controller.error(err);
-        }
+    await prisma.aIUsageHistory.create({
+      data: {
+        userId,
+        agentType: "REWRITE",
+        promptSnippet: selectedText.slice(0, 120),
+        tokensUsed,
+        responseTime: Date.now() - startTime,
       },
     });
 
-    return new Response(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    return Response.json({ rewrittenText, tokensUsed });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Rewrite failed";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    const message = formatGeminiError(error);
+    return Response.json({ error: message }, { status: geminiErrorStatus(error) });
   }
 }

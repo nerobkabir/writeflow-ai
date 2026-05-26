@@ -1,5 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
+
+async function hashPassword(plain) {
+  return bcrypt.hash(plain, 10);
+}
 
 async function main() {
   console.log("Starting database seeding process...");
@@ -18,13 +23,16 @@ async function main() {
 
   console.log("Database cleared.");
 
-  // 2. Create Users
+  // 2. Create Users (passwords hashed with bcrypt)
+  const adminPassword = await hashPassword("123456");
+  const userPassword = await hashPassword("123456");
+
   const admin = await prisma.user.create({
     data: {
       id: "admin-phase1",
       name: "Alexander Admin",
       email: "admin@writeflow.com",
-      password: "123456",
+      password: adminPassword,
       role: "ADMIN",
       plan: "TEAM",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
@@ -37,7 +45,7 @@ async function main() {
       id: "user-phase1",
       name: "John Writer",
       email: "user@writeflow.com",
-      password: "123456",
+      password: userPassword,
       role: "USER",
       plan: "PRO",
       avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80",
