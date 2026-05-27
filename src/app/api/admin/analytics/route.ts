@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import type { Plan } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const PLAN_PRICE: Record<string, number> = {
   FREE: 0,
@@ -78,9 +82,12 @@ export async function GET() {
     }),
   ]);
 
-  const revenue = subscriptions.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] ?? 0), 0);
+  const revenue = subscriptions.reduce(
+    (sum: number, s: { plan: Plan }) => sum + (PLAN_PRICE[s.plan] ?? 0),
+    0
+  );
   const previousRevenue = previousSubscriptions.reduce(
-    (sum, s) => sum + (PLAN_PRICE[s.plan] ?? 0),
+    (sum: number, s: { plan: Plan }) => sum + (PLAN_PRICE[s.plan] ?? 0),
     0
   );
 
