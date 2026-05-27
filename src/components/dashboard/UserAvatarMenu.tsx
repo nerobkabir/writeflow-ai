@@ -15,9 +15,10 @@ const dropdownScaleIn = {
 
 interface UserAvatarMenuProps {
   className?: string;
+  collapsed?: boolean;
 }
 
-export function UserAvatarMenu({ className }: UserAvatarMenuProps) {
+export function UserAvatarMenu({ className, collapsed = false }: UserAvatarMenuProps) {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const userRole = (session?.user as { role?: string })?.role;
@@ -32,7 +33,11 @@ export function UserAvatarMenu({ className }: UserAvatarMenuProps) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full rounded-lg hover:bg-badge/60 p-1 transition-colors"
+        title={collapsed ? session.user.name ?? "Account" : undefined}
+        className={cn(
+          "flex w-full items-center rounded-lg p-1 transition-colors hover:bg-badge/60",
+          collapsed ? "justify-center" : "gap-2"
+        )}
         aria-expanded={open}
       >
         {avatarUrl ? (
@@ -46,18 +51,22 @@ export function UserAvatarMenu({ className }: UserAvatarMenuProps) {
             {initials}
           </span>
         )}
-        <div className="flex-1 min-w-0 text-left hidden lg:block">
-          <p className="text-[12px] font-semibold truncate">{session.user.name}</p>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-            PRO PLAN
-          </p>
-        </div>
-        <ChevronDown
-          className={cn(
-            "w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform",
-            open && "rotate-180"
-          )}
-        />
+        {!collapsed && (
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-[12px] font-semibold truncate">{session.user.name}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+              PRO PLAN
+            </p>
+          </div>
+        )}
+        {!collapsed && (
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        )}
       </button>
 
       <AnimatePresence>
