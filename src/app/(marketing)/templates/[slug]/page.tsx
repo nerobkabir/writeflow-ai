@@ -211,17 +211,17 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ slug:
           <div className="lg:w-[65%] space-y-10">
             {/* Hero */}
             <section className="space-y-4">
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+              <h1 className="text-5xl font-bold tracking-tight text-foreground leading-tight">
                 {template.name}
               </h1>
-              <p className="text-[15px] text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-base leading-relaxed text-muted-foreground max-w-2xl">
                 {template.description}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 {metaPills.map(({ icon: Icon, label }) => (
                   <span
                     key={label}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium border border-border rounded-full bg-surface"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-full bg-surface"
                   >
                     <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                     {label}
@@ -233,14 +233,14 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ slug:
             {/* Overview */}
             <section className="space-y-6">
               <div>
-                <h2 className="text-[15px] font-bold mb-2">What this template is for</h2>
-                <p className="text-[14px] text-muted-foreground leading-relaxed">{template.overview}</p>
+                <h4 className="text-base font-semibold mb-2">What this template is for</h4>
+                <p className="text-base leading-relaxed text-muted-foreground">{template.overview}</p>
               </div>
               <div>
-                <h2 className="text-[15px] font-bold mb-3">Best suited for</h2>
+                <h4 className="text-base font-semibold mb-3">Best suited for</h4>
                 <ul className="space-y-2.5">
                   {template.bestSuitedFor.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-[14px] text-muted-foreground">
+                    <li key={item} className="flex items-start gap-2.5 text-base leading-relaxed text-muted-foreground">
                       <Check className="w-4 h-4 text-foreground shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
@@ -341,7 +341,7 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ slug:
 
               {/* Review form */}
               <div className="border border-border bg-surface rounded-xl p-6">
-                <h3 className="font-bold text-[16px] mb-4">Leave a Review</h3>
+                <h4 className="text-base font-semibold mb-4 text-foreground">Leave a Review</h4>
                 {authStatus === "authenticated" ? (
                   <form onSubmit={handleSubmitReview} className="space-y-4">
                     <StarPicker
@@ -397,13 +397,13 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ slug:
             </Link>
 
             <div className="border border-border bg-surface rounded-xl p-6 space-y-4">
-              <h3 className="font-bold text-[14px] tracking-tight">Key Information</h3>
+              <h4 className="text-base font-semibold tracking-tight text-foreground">Key Information</h4>
               <dl className="space-y-3.5">
                 {sidebarRows.map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3">
                     <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <dt className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <dt className="text-xs tracking-widest uppercase font-medium text-muted-foreground">
                         {label}
                       </dt>
                       <dd className="text-[13px] font-semibold mt-0.5">{value}</dd>
@@ -414,7 +414,7 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ slug:
             </div>
 
             <div className="border border-border bg-surface rounded-xl p-6 space-y-4">
-              <h3 className="font-bold text-[14px] tracking-tight">Rating Distribution</h3>
+              <h4 className="text-base font-semibold tracking-tight text-foreground">Rating Distribution</h4>
               <RatingDistribution bars={ratingDistribution} />
             </div>
           </aside>

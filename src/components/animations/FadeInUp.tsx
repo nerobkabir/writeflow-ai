@@ -9,17 +9,30 @@ interface FadeInUpProps {
   className?: string;
   delay?: number;
   triggerOnce?: boolean;
+  /** Optional HTML id — used for in-page anchor links (e.g. privacy/terms pages) */
+  id?: string;
 }
 
-export function FadeInUp({ children, className = "", delay = 0, triggerOnce = true }: FadeInUpProps) {
+export function FadeInUp({
+  children,
+  className = "",
+  delay = 0,
+  triggerOnce = true,
+  id,
+}: FadeInUpProps) {
   const shouldReduceMotion = useReducedMotion();
 
   if (shouldReduceMotion) {
-    return <div className={className}>{children}</div>;
+    return (
+      <div id={id} className={className}>
+        {children}
+      </div>
+    );
   }
 
   return (
     <motion.div
+      id={id}
       variants={fadeInUp}
       initial="initial"
       whileInView="animate"
@@ -31,4 +44,5 @@ export function FadeInUp({ children, className = "", delay = 0, triggerOnce = tr
     </motion.div>
   );
 }
+
 export default FadeInUp;

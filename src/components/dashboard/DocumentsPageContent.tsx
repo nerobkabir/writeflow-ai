@@ -222,6 +222,7 @@ export function DocumentsPageContent() {
 
   const fetchDocs = useCallback(async () => {
     setLoading(true);
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         page: String(page),
@@ -232,6 +233,11 @@ export function DocumentsPageContent() {
       const res = await fetch(`/api/documents?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load");
+
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 300 - elapsed);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
       setDocuments(data.documents ?? []);
       setTotal(data.total ?? 0);
       setTotalPages(data.totalPages ?? 1);
@@ -264,11 +270,11 @@ export function DocumentsPageContent() {
   const showingTo = Math.min(page * pageSize, total);
 
   return (
-    <div className="max-w-6xl mx-auto pb-24 md:pb-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 md:px-8 pb-24 md:pb-8 space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">My Documents</h1>
-          <p className="text-[14px] text-muted-foreground mt-1">
+          <h1 className="text-4xl font-bold tracking-tight">My Documents</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your professional AI-assisted workflows.
           </p>
         </div>
@@ -284,7 +290,7 @@ export function DocumentsPageContent() {
           </div>
           <button
             type="button"
-            className="px-4 py-2 text-[12px] font-bold border border-border rounded-lg hover:border-foreground transition-colors whitespace-nowrap"
+            className="px-4 py-2 text-[12px] font-bold border border-border rounded-lg hover:border-foreground active:scale-[0.97] transition-all duration-100 focus-visible:ring-2 focus-visible:ring-ring outline-none select-none whitespace-nowrap"
             onClick={() => toast.info("Export coming soon")}
           >
             Export All
@@ -292,14 +298,14 @@ export function DocumentsPageContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.45fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.45fr] gap-4 md:gap-6">
         <div className="border border-border rounded-xl bg-surface p-6 flex flex-col justify-between min-h-[200px]">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider border border-border px-2 py-0.5 rounded">
+            <span className="text-xs tracking-widest uppercase font-medium border border-border px-2 py-0.5 rounded text-muted-foreground">
               Featured
             </span>
-            <h2 className="text-xl font-bold mt-4">Generate Technical Whitepaper</h2>
-            <p className="text-[13px] text-muted-foreground mt-2 leading-relaxed max-w-lg">
+            <h2 className="text-xl font-semibold mt-4">Generate Technical Whitepaper</h2>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-lg">
               Our specialized Intelligence Pro engine can now draft full technical
               specifications from minimal architectural notes.
             </p>
@@ -307,13 +313,13 @@ export function DocumentsPageContent() {
           <div className="flex flex-wrap gap-3 mt-6">
             <Link
               href="/documents/new"
-              className="px-4 py-2.5 bg-foreground text-background text-[12px] font-bold rounded-lg hover:opacity-90"
+              className="px-4 py-2.5 bg-foreground text-background text-[12px] font-bold rounded-lg active:scale-[0.97] transition-all duration-100 inline-block"
             >
               Start Drafting
             </Link>
             <Link
               href="/explore"
-              className="px-4 py-2.5 text-[12px] font-bold text-muted-foreground hover:text-foreground"
+              className="px-4 py-2.5 text-[12px] font-bold text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-100 inline-block"
             >
               View Samples →
             </Link>
@@ -350,7 +356,7 @@ export function DocumentsPageContent() {
             type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
-              "relative z-10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded-full transition-colors",
+              "relative z-10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded-full transition-colors active:scale-[0.97] duration-100",
               filter === f.id ? "text-background" : "text-muted-foreground"
             )}
           >
@@ -368,19 +374,62 @@ export function DocumentsPageContent() {
 
       <div className="border border-border rounded-xl bg-surface overflow-hidden">
         {loading && documents.length === 0 ? (
-          <div className="py-20 text-center text-[13px] text-muted-foreground">
-            Loading documents…
+          <div className="w-full">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border">
+                  {["Name", "Last Modified", "Type", "Status", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-xs tracking-widest uppercase font-medium text-muted-foreground"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <tr key={idx} className="border-b border-border last:border-0">
+                    <td className="px-4 py-4">
+                      <div className="flex items-start gap-3 animate-pulse">
+                        <div className="w-5 h-5 rounded bg-muted shrink-0 mt-0.5" />
+                        <div className="space-y-2 flex-grow max-w-[200px]">
+                          <div className="h-4 bg-muted rounded w-3/4" />
+                          <div className="h-3 bg-muted rounded w-1/2" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1.5 animate-pulse">
+                        <div className="w-3 h-3 bg-muted rounded" />
+                        <div className="h-3 w-12 bg-muted rounded" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-8 h-8 bg-muted rounded animate-pulse" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : documents.length === 0 ? (
           <div className="py-20 flex flex-col items-center text-center px-4">
             <FileSearch className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="font-bold text-[16px]">No documents yet</p>
-            <p className="text-[13px] text-muted-foreground mt-1 mb-4">
+            <h3 className="text-xl font-semibold mb-2 text-foreground">No documents yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">
               Start writing your first document →
             </p>
             <Link
               href="/documents/new"
-              className="px-4 py-2.5 bg-foreground text-background text-[12px] font-bold rounded-lg"
+              className="px-4 py-2.5 bg-foreground text-background text-[12px] font-bold rounded-lg active:scale-[0.97] transition-all duration-100"
             >
               Create New
             </Link>

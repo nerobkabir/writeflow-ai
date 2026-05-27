@@ -262,3 +262,23 @@ body {
     @apply font-sans;
   }
 }
+
+/* Performant single-border CSS spinner */
+@keyframes spin-loader {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-loader {
+  animation: spin-loader 0.6s linear infinite;
+}
+
+/* Accessibility: Reduced Motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

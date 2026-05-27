@@ -3,11 +3,36 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Calendar, Clock, User, Twitter, Linkedin, Link as LinkIcon, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import {
+  ChevronRight,
+  Calendar,
+  Clock,
+  User,
+  Link as LinkIcon,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
 import { FadeInUp } from "@/components/animations/FadeInUp";
+
+// Minimal inline SVGs
+const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+  </svg>
+);
+
+const LinkedinIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect x="2" y="9" width="4" height="12" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
 
 type BlogPost = {
   id: string;
@@ -23,6 +48,12 @@ type BlogPost = {
   createdAt: string;
 };
 
+const scaleIn = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.15 } },
+  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.1 } }
+};
+
 export default function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
   const resolvedParams = React.use(params);
@@ -31,6 +62,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
   const [post, setPost] = useState<BlogPost | null>(null);
   const [related, setRelated] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -65,7 +97,9 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
     toast.success("Article link copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -113,7 +147,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
       return (
         <p
           key={index}
-          className="text-muted-foreground text-[13.5px] leading-relaxed mb-4"
+          className="text-muted-foreground text-base leading-relaxed mb-4"
           dangerouslySetInnerHTML={{ __html: formattedText }}
         />
       );
@@ -146,17 +180,16 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
           <span className="inline-block bg-badge border border-border/80 px-3 py-1 rounded-full text-[10px] font-bold text-foreground">
             {post.category}
           </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-none text-foreground">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground">
             {post.title}
           </h1>
 
           {/* Author details & Social share */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-y border-border/50 py-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full border border-border bg-badge overflow-hidden flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-full border border-border bg-badge overflow-hidden flex items-center justify-center shrink-0 relative">
                 {post.authorAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.authorAvatar} alt={post.authorName} className="h-full w-full object-cover" />
+                  <Image src={post.authorAvatar} alt={post.authorName} width={40} height={40} className="h-full w-full object-cover" />
                 ) : (
                   <User className="w-4 h-4 text-muted-foreground" />
                 )}
@@ -183,26 +216,53 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
                 onClick={() => {
                   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`, "_blank");
                 }}
-                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none select-none"
                 title="Share on Twitter"
+                aria-label="Share on Twitter"
               >
-                <Twitter className="w-3.5 h-3.5" />
+                <TwitterIcon className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => {
                   window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, "_blank");
                 }}
-                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none select-none"
                 title="Share on LinkedIn"
+                aria-label="Share on LinkedIn"
               >
-                <Linkedin className="w-3.5 h-3.5" />
+                <LinkedinIcon className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={copyToClipboard}
-                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none select-none relative overflow-hidden"
                 title="Copy Article Link"
+                aria-label="Copy Article Link"
               >
-                <LinkIcon className="w-3.5 h-3.5" />
+                <AnimatePresence mode="wait" initial={false}>
+                  {copied ? (
+                    <motion.span
+                      key="check"
+                      variants={scaleIn}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="text-success flex items-center justify-center"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="copy"
+                      variants={scaleIn}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="flex items-center justify-center"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </button>
             </div>
           </div>
@@ -210,11 +270,13 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
 
         {/* Large thumbnail image */}
         <FadeInUp className="aspect-[16/9] w-full rounded-2xl border border-border bg-badge/40 overflow-hidden shadow-sm relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={post.thumbnail}
             alt={post.title}
-            className="w-full h-full object-cover grayscale opacity-80"
+            fill
+            sizes="(max-w-4xl) 100vw, 896px"
+            className="object-cover grayscale opacity-80"
+            priority
           />
         </FadeInUp>
 
@@ -245,11 +307,12 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
                   className="group border border-border bg-surface rounded-xl overflow-hidden flex flex-col h-[320px] shadow-sm hover:shadow-md hover:border-accent transition-all duration-300"
                 >
                   <div className="aspect-[16/10] w-full relative overflow-hidden bg-badge/40 border-b border-border shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={item.thumbnail}
                       alt={item.title}
-                      className="w-full h-full object-cover grayscale opacity-75 group-hover:opacity-90 group-hover:scale-103 transition-all duration-500"
+                      fill
+                      sizes="(max-w-md) 100vw, 300px"
+                      className="object-cover grayscale opacity-75 group-hover:opacity-90 group-hover:scale-[1.03] transition-all duration-500"
                     />
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between overflow-hidden">

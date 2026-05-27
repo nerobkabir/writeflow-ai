@@ -5,10 +5,17 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, MessageSquare, Twitter, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Mail, MessageSquare, Clock, CheckCircle2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
+
+// Minimal inline SVGs
+const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+  </svg>
+);
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -243,7 +250,7 @@ export default function ContactPage() {
 
                 <li className="flex items-start gap-3.5">
                   <div className="h-9 w-9 bg-sky-500/5 border border-sky-500/10 rounded-lg flex items-center justify-center text-sky-500 shrink-0 shadow-sm">
-                    <Twitter className="w-4.5 h-4.5" />
+                    <TwitterIcon className="w-4.5 h-4.5" />
                   </div>
                   <div className="space-y-0.5">
                     <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">Twitter / X</span>

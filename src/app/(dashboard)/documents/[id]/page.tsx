@@ -211,6 +211,7 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    const startTime = Date.now();
 
     async function init() {
       try {
@@ -274,7 +275,13 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
         toast.error(err instanceof Error ? err.message : "Failed to load document");
         router.push("/documents");
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          const elapsed = Date.now() - startTime;
+          const delay = Math.max(0, 300 - elapsed);
+          setTimeout(() => {
+            if (active) setLoading(false);
+          }, delay);
+        }
       }
     }
 
@@ -515,10 +522,88 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
-          Initializing workspace...
-        </p>
+      <div className="h-screen w-screen flex overflow-hidden bg-background text-foreground select-none">
+        {/* Sidebar Skeleton */}
+        <aside className="w-[200px] shrink-0 h-screen flex flex-col border-r border-border bg-surface p-4 justify-between animate-pulse">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-3 bg-muted rounded w-1/2" />
+            </div>
+            <div className="h-8 bg-muted rounded w-full mt-4" />
+            <div className="space-y-3 pt-6">
+              <div className="h-6 bg-muted rounded w-full" />
+              <div className="h-6 bg-muted rounded w-11/12" />
+              <div className="h-6 bg-muted rounded w-4/5" />
+              <div className="h-6 bg-muted rounded w-full" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 border-t border-border pt-4">
+            <div className="w-8 h-8 rounded-full bg-muted shrink-0" />
+            <div className="space-y-1 flex-grow">
+              <div className="h-3 bg-muted rounded w-3/4" />
+              <div className="h-2 bg-muted rounded w-1/2" />
+            </div>
+          </div>
+        </aside>
+
+        {/* Editor Main Skeleton */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Header Skeleton */}
+          <header className="h-12 border-b border-border bg-surface flex items-center justify-between px-5 animate-pulse">
+            <div className="flex items-center gap-3 w-1/3">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-4 bg-muted rounded w-16" />
+              <div className="h-7 bg-muted rounded w-24" />
+            </div>
+          </header>
+
+          <div className="flex-grow flex">
+            {/* Format toolbar skeleton */}
+            <div className="w-12 border-r border-border bg-surface p-2 flex flex-col items-center gap-4 animate-pulse">
+              <div className="w-8 h-8 bg-muted rounded" />
+              <div className="w-8 h-8 bg-muted rounded" />
+              <div className="w-8 h-8 bg-muted rounded" />
+              <div className="w-8 h-8 bg-muted rounded" />
+              <div className="w-8 h-8 bg-muted rounded" />
+            </div>
+
+            {/* Main Text Area Skeleton */}
+            <main className="flex-1 bg-background p-8 relative flex flex-col gap-6 animate-pulse">
+              <div className="space-y-2">
+                <div className="h-3 bg-muted rounded w-24 mb-6" />
+                <div className="h-10 bg-muted rounded w-1/2 mb-4" />
+              </div>
+              <div className="space-y-4 max-w-3xl">
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="h-4 bg-muted rounded w-11/12" />
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="h-4 bg-muted rounded w-4/5" />
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="h-4 bg-muted rounded w-11/12" />
+              </div>
+            </main>
+
+            {/* AI Panel Skeleton */}
+            <aside className="w-[300px] shrink-0 border-l border-border bg-surface p-5 flex flex-col justify-between animate-pulse">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="h-5 bg-muted rounded w-1/3" />
+                  <div className="h-3 bg-muted rounded w-full" />
+                </div>
+                <div className="space-y-4">
+                  <div className="h-20 bg-muted rounded w-full" />
+                  <div className="h-10 bg-muted rounded w-full" />
+                  <div className="h-10 bg-muted rounded w-full" />
+                </div>
+              </div>
+              <div className="h-10 bg-muted rounded w-full" />
+            </aside>
+          </div>
+        </div>
       </div>
     );
   }
