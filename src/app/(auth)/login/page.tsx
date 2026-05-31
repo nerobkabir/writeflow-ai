@@ -2,17 +2,16 @@
 
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn, getSession } from "next-auth/react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Loader2, User, ShieldAlert, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, User, Sparkles, Terminal } from "lucide-react";
 import { loginSchema, LoginInput } from "@/lib/validations";
-import { Logo } from "@/components/shared/Logo";
+import { AuthShell, authInputClass, authLabelClass } from "@/components/auth/AuthShell";
 
-// Minimal custom inline Google Icon
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
     <path
@@ -34,9 +33,17 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const AppleIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
+    <path
+      fill="currentColor"
+      d="M17.05 20.28c-.98.95-2.05 1.88-3.08 1.88-1.02 0-1.4-.61-2.55-.61-1.16 0-1.57.6-2.53.63-1.01.03-2.19-.98-3.17-1.96-2-2-3.53-5.63-3.53-9.06 0-5.44 3.5-8.31 6.94-8.31 1.09 0 2.11.4 2.78.79.67.39 1.62.9 2.22.9.6 0 1.34-.4 1.95-.73.68-.36 1.83-.86 3.12-.86 3.42 0 6.06 2.45 6.84 5.92-2.8.96-4.7 3.58-4.7 6.81 0 3.79 2.65 6.49 6.04 7.42-.71 2.05-2.39 4.18-4.36 6.18zM12.03 5c.42-3.08 2.9-5 5.09-5 .19 2.67-2.14 5.06-5.09 5z"
+    />
+  </svg>
+);
+
 function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -47,10 +54,7 @@ function LoginContent() {
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (data: LoginInput) => {
@@ -66,11 +70,8 @@ function LoginContent() {
         toast.error("Invalid credentials. Please verify your email and password.");
       } else {
         toast.success("Identity verified. Initializing workspace...");
-        
-        // Fetch active session to resolve exact role routing
         const session = await getSession();
-        const userRole = (session?.user as any)?.role;
-
+        const userRole = (session?.user as { role?: string })?.role;
         router.refresh();
         if (userRole === "ADMIN") {
           router.push("/admin/analytics");
@@ -78,7 +79,7 @@ function LoginContent() {
           router.push("/dashboard");
         }
       }
-    } catch (err) {
+    } catch {
       toast.error("A network or configuration exception occurred.");
     } finally {
       setLoading(false);
@@ -92,216 +93,202 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 selection:bg-foreground selection:text-background font-sans">
-      
-      {/* Centered Monochromatic Auth Shell */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="w-full max-w-md border border-border bg-surface rounded-xl p-8 shadow-sm space-y-6"
-      >
-        {/* Top Header */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <Logo />
-          <h2 className="text-2xl font-extrabold tracking-tight mt-4">Welcome back</h2>
-          <p className="text-[13px] text-muted-foreground">
-            Sign in to your WriteFlow AI workspace
-          </p>
+    <AuthShell
+      mode="login"
+      title="Welcome Back"
+      subtitle="Enter your secure credentials to access the intelligence platform."
+      footer={
+        <p className="text-center text-[12.5px] text-muted-foreground select-none">
+          New operative?{" "}
+          <Link href="/register" className="font-extrabold text-foreground hover:underline uppercase tracking-wider text-[11.5px]">
+            Request Access
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        {/* Email identity field */}
+        <div className="space-y-1">
+          <label htmlFor="email" className={authLabelClass}>
+            Email Identity
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="name@corporation.ai"
+            className={authInputClass(!!errors.email)}
+            {...register("email")}
+          />
+          <AnimatePresence>
+            {errors.email && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.email.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Credentials Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          
-          {/* Email field */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.06 }}
-            className="space-y-1"
-          >
-            <label htmlFor="email" className="block text-[11px] font-bold text-muted-foreground uppercase">
-              Email Address
+        {/* Password field */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="password" className={authLabelClass}>
+              Access Protocol
             </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="name@company.com"
-              className={`w-full px-3 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                errors.email ? "border-error focus:border-error" : "border-border"
-              }`}
-              {...register("email")}
-            />
-            <AnimatePresence>
-              {errors.email && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.email.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Password field */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.12 }}
-            className="space-y-1"
-          >
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-[11px] font-bold text-muted-foreground uppercase">
-                Password
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-[12px] text-muted-foreground hover:text-foreground font-semibold transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className={`w-full pl-3 pr-10 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                  errors.password ? "border-error focus:border-error" : "border-border"
-                }`}
-                {...register("password")}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <AnimatePresence>
-              {errors.password && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.password.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Submit Button with AnimatePresence Loading state */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.18 }}
-            className="pt-2"
-          >
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-foreground text-background rounded-lg font-bold text-[13px] hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+            <Link
+              href="/forgot-password"
+              className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground transition-colors"
             >
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.span
-                    key="loader"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Verifying Credentials...</span>
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="text"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    Sign In
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          </motion.div>
-
-          {/* Divider */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="flex-shrink mx-3 text-[11px] text-muted-foreground font-bold uppercase tracking-wider">
-              or continue with
-            </span>
-            <div className="flex-grow border-t border-border"></div>
+              Recovery
+            </Link>
           </div>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              className={`${authInputClass(!!errors.password)} pr-10 font-mono`}
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <AnimatePresence>
+            {errors.password && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.password.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
 
-          {/* Google SSO */}
+        {/* Persistent session checkbox */}
+        <div className="flex items-center gap-2 py-0.5">
+          <label className="flex cursor-pointer items-center gap-2 select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border accent-foreground cursor-pointer bg-background"
+              defaultChecked
+            />
+            <span className="text-[12px] font-semibold text-muted-foreground hover:text-foreground transition-colors leading-none">
+              Persistent Session
+            </span>
+          </label>
+        </div>
+
+        {/* Main Action Button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-foreground py-3 text-[12px] font-extrabold text-background uppercase tracking-[0.14em] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition-all select-none cursor-pointer"
+        >
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.span
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+                VERIFYING PROTOCOL...
+              </motion.span>
+            ) : (
+              <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                Authorize Access
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+
+        {/* Secondary Divider */}
+        <div className="relative flex items-center py-1.5">
+          <div className="flex-grow border-t border-border" />
+          <span className="mx-3 shrink-0 text-[8.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground select-none">
+            Secondary Auth
+          </span>
+          <div className="flex-grow border-t border-border" />
+        </div>
+
+        {/* Google & Apple Multi-Grid */}
+        <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full py-2.5 border border-border bg-surface text-foreground rounded-lg font-bold text-[13px] hover:border-accent flex items-center justify-center gap-2 shadow-sm transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background py-2 text-[11.5px] font-bold text-foreground hover:border-foreground active:scale-[0.98] transition-all cursor-pointer"
           >
             <GoogleIcon />
-            <span>Continue with Google</span>
+            Google
           </button>
-        </form>
-
-        {/* Demo Box */}
-        <div className="border border-border bg-background rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-2 text-foreground">
-            <ShieldAlert className="w-4 h-4 shrink-0 text-muted-foreground" />
-            <span className="text-[12px] font-bold uppercase tracking-wider">Quick Demo Access</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleDemoFill("user@writeflow.com", "Demo User")}
-              className="py-2 border border-border hover:border-accent bg-surface text-foreground text-[12px] font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
-              <User className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>User Demo</span>
-            </button>
-            <button
-              onClick={() => handleDemoFill("admin@writeflow.com", "Demo Admin")}
-              className="py-2 border border-border hover:border-accent bg-surface text-foreground text-[12px] font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Admin Demo</span>
-            </button>
-          </div>
-          <p className="text-[11.5px] text-muted-foreground text-center leading-relaxed">
-            Demo credentials are pre-filled. Just click Sign In.
-          </p>
-        </div>
-
-        {/* Registration Redirection link */}
-        <p className="text-center text-[12.5px] text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/register"
-            className="font-bold text-foreground hover:underline transition-all"
+          <button
+            type="button"
+            onClick={() => toast.warning("Apple Identity Provider configuration suboptimal.")}
+            className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background py-2 text-[11.5px] font-bold text-foreground hover:border-foreground active:scale-[0.98] transition-all cursor-pointer"
           >
-            Register →
-          </Link>
+            <AppleIcon />
+            Apple
+          </button>
+        </div>
+      </form>
+
+      {/* Upgraded Terminal-Styled Demo Control Box */}
+      <div className="mt-4 rounded-xl border border-border/80 bg-background/50 p-3.5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-1 font-mono text-[7px] text-muted-foreground uppercase border-b border-l border-border select-none">
+          SECURE BYPASS
+        </div>
+        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1.5 select-none">
+          <Terminal className="h-3 w-3" />
+          [ QUICK ACCESS TERMINAL ]
         </p>
-      </motion.div>
-    </div>
+        <div className="mt-2.5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => handleDemoFill("user@writeflow.com", "Demo User")}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface py-1.5 text-[10.5px] font-mono font-bold tracking-wider uppercase hover:border-foreground hover:bg-background transition-all cursor-pointer"
+          >
+            <User className="h-3 w-3 text-muted-foreground" />
+            User Demo
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDemoFill("admin@writeflow.com", "Demo Admin")}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface py-1.5 text-[10.5px] font-mono font-bold tracking-wider uppercase hover:border-foreground hover:bg-background transition-all cursor-pointer"
+          >
+            <Sparkles className="h-3 w-3 text-muted-foreground" />
+            Admin Demo
+          </button>
+        </div>
+        <p className="mt-2.5 text-center text-[10px] text-muted-foreground leading-relaxed font-medium select-none">
+          Click a demo token to pre-fill credentials, then authorize.
+        </p>
+      </div>
+    </AuthShell>
   );
 }
+
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       }
     >

@@ -10,9 +10,8 @@ import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Logo } from "@/components/shared/Logo";
+import { AuthShell, authInputClass, authLabelClass } from "@/components/auth/AuthShell";
 
-// Modular schema directly mapped to Zod requirements
 const registerSchema = z
   .object({
     name: z.string().min(2, "Full Name must be at least 2 characters long"),
@@ -28,9 +27,8 @@ const registerSchema = z
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
 
-// Password strength checker helper
 const getPasswordStrength = (pass: string): { score: number; color: string } => {
-  if (!pass) return { score: 0, color: "bg-neutral-200 dark:bg-neutral-800" };
+  if (!pass) return { score: 0, color: "bg-border" };
   const len = pass.length;
   const hasNum = /\d/.test(pass);
   const hasSymbol = /[^A-Za-z0-9]/.test(pass);
@@ -38,15 +36,15 @@ const getPasswordStrength = (pass: string): { score: number; color: string } => 
   const hasLower = /[a-z]/.test(pass);
 
   if (len >= 12 && hasNum && hasSymbol && hasUpper && hasLower) {
-    return { score: 4, color: "bg-emerald-500" };
+    return { score: 4, color: "bg-foreground" };
   }
   if (len >= 8 && hasSymbol) {
-    return { score: 3, color: "bg-yellow-500" };
+    return { score: 3, color: "bg-muted-foreground" };
   }
   if (len >= 6 && hasNum) {
-    return { score: 2, color: "bg-yellow-500" };
+    return { score: 2, color: "bg-muted-foreground" };
   }
-  return { score: 1, color: "bg-red-500" };
+  return { score: 1, color: "bg-error" };
 };
 
 export default function RegisterPage() {
@@ -77,10 +75,8 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormInputs) => {
     setLoading(true);
     try {
-      // Simulate backend generation registration latency
       await new Promise((resolve) => setTimeout(resolve, 800));
-      
-      // Auto-login after successful validation and registry
+
       const result = await signIn("credentials", {
         redirect: false,
         email: data.email,
@@ -95,7 +91,7 @@ export default function RegisterPage() {
         router.refresh();
         router.push("/dashboard");
       }
-    } catch (err) {
+    } catch {
       toast.error("Registration failed. Verification checks suboptimal.");
     } finally {
       setLoading(false);
@@ -103,271 +99,228 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 selection:bg-foreground selection:text-background font-sans">
-      
-      {/* Dynamic scaled card wrapper */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="w-full max-w-md border border-border bg-surface rounded-xl p-8 shadow-sm space-y-6 animate-scaleIn"
-      >
-        {/* Header Block */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <Logo />
-          <h2 className="text-2xl font-extrabold tracking-tight mt-4">Create your account</h2>
-          <p className="text-[13px] text-muted-foreground">
-            Get started with WriteFlow AI workspace
-          </p>
-        </div>
-
-        {/* Inputs forms */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          
-          {/* Full Name */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.06 }}
-            className="space-y-1"
-          >
-            <label htmlFor="name" className="block text-[11px] font-bold text-muted-foreground uppercase">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              placeholder="e.g. John Doe"
-              className={`w-full px-3 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                errors.name ? "border-error focus:border-error" : "border-border"
-              }`}
-              {...register("name")}
-            />
-            <AnimatePresence>
-              {errors.name && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.name.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Email Address */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.12 }}
-            className="space-y-1"
-          >
-            <label htmlFor="email" className="block text-[11px] font-bold text-muted-foreground uppercase">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="name@company.com"
-              className={`w-full px-3 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                errors.email ? "border-error focus:border-error" : "border-border"
-              }`}
-              {...register("email")}
-            />
-            <AnimatePresence>
-              {errors.email && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.email.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Password with Strength bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.18 }}
-            className="space-y-1"
-          >
-            <label htmlFor="password" className="block text-[11px] font-bold text-muted-foreground uppercase">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className={`w-full pl-3 pr-10 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                  errors.password ? "border-error focus:border-error" : "border-border"
-                }`}
-                {...register("password")}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Strength indicator layout */}
-            <div className="grid grid-cols-4 gap-1.5 pt-1.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1 rounded-full transition-all duration-200 ${
-                    i < score ? color : "bg-neutral-200 dark:bg-neutral-800"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <AnimatePresence>
-              {errors.password && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.password.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Confirm Password */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.24 }}
-            className="space-y-1"
-          >
-            <label htmlFor="confirmPassword" className="block text-[11px] font-bold text-muted-foreground uppercase">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className={`w-full pl-3 pr-10 py-2 text-[13.5px] rounded-lg bg-background border focus:border-accent outline-none transition-colors ${
-                  errors.confirmPassword ? "border-error focus:border-error" : "border-border"
-                }`}
-                {...register("confirmPassword")}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <AnimatePresence>
-              {errors.confirmPassword && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.confirmPassword.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Terms conditions Checkbox */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.3 }}
-            className="space-y-1"
-          >
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                className={`h-4 w-4 rounded bg-background border border-border focus:ring-accent accent-foreground`}
-                {...register("terms")}
-              />
-              <span className="text-[12.5px] text-muted-foreground select-none">
-                I accept the terms &amp; conditions
-              </span>
-            </label>
-            <AnimatePresence>
-              {errors.terms && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[11px] text-error mt-0.5"
-                >
-                  {errors.terms.message}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Action button */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.36 }}
-            className="pt-2"
-          >
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-foreground text-background rounded-lg font-bold text-[13px] hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
-            >
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.span
-                    key="loader"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Signing Up...</span>
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="text"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    Register
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          </motion.div>
-        </form>
-
-        {/* Redirect */}
-        <p className="text-center text-[12.5px] text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-bold text-foreground hover:underline transition-all"
-          >
-            Sign In →
+    <AuthShell
+      mode="register"
+      title="Join the Elite"
+      subtitle="Initialize your clinical workspace intelligence."
+      footer={
+        <p className="text-center text-[12.5px] text-muted-foreground select-none">
+          ALREADY INITIALIZED?{" "}
+          <Link href="/login" className="font-extrabold text-foreground hover:underline uppercase tracking-wider text-[11.5px]">
+            SIGN IN
           </Link>
         </p>
-      </motion.div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
+        {/* Full name input */}
+        <div className="space-y-1">
+          <label htmlFor="name" className={authLabelClass}>
+            Full Name
+          </label>
+          <input
+            id="name"
+            type="text"
+            placeholder="ENTER NAME"
+            className={authInputClass(!!errors.name)}
+            {...register("name")}
+          />
+          <AnimatePresence>
+            {errors.name && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.name.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Email input */}
+        <div className="space-y-1">
+          <label htmlFor="email" className={authLabelClass}>
+            Email Address
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="ADDRESS@FLOW.AI"
+            className={authInputClass(!!errors.email)}
+            {...register("email")}
+          />
+          <AnimatePresence>
+            {errors.email && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.email.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Password input */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="password" className={authLabelClass}>
+              Password
+            </label>
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground font-mono">
+              STRENGTH:{" "}
+              <span className={
+                score === 4 ? "text-emerald-500" :
+                score === 3 ? "text-neutral-400" :
+                score === 2 ? "text-neutral-400" :
+                score === 1 ? "text-error" : "text-neutral-500"
+              }>
+                {score === 4 ? "OPTIMAL" :
+                 score === 3 ? "HIGH" :
+                 score === 2 ? "MID" :
+                 score === 1 ? "WEAK" : "VOID"}
+              </span>
+            </span>
+          </div>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              className={`${authInputClass(!!errors.password)} pr-10 font-mono`}
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          
+          {/* Cybernetic Segment Indicators */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i < score ? color : "bg-neutral-800"
+                }`}
+              />
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {errors.password && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.password.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Confirm password input */}
+        <div className="space-y-1">
+          <label htmlFor="confirmPassword" className={authLabelClass}>
+            Confirm Password
+          </label>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="••••••••"
+              className={`${authInputClass(!!errors.confirmPassword)} pr-10 font-mono`}
+              {...register("confirmPassword")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <AnimatePresence>
+            {errors.confirmPassword && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.confirmPassword.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Terms check checkbox */}
+        <div className="space-y-1 py-0.5">
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-border accent-foreground cursor-pointer bg-background"
+              {...register("terms")}
+            />
+            <span className="text-[12px] text-muted-foreground hover:text-foreground transition-colors select-none leading-relaxed">
+              I accept the{" "}
+              <Link href="/terms" className="font-bold text-foreground hover:underline">
+                terms &amp; conditions
+              </Link>
+            </span>
+          </label>
+          <AnimatePresence>
+            {errors.terms && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] font-semibold text-error"
+              >
+                {errors.terms.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Action Submit Button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-foreground py-3 text-[12px] font-extrabold text-background uppercase tracking-[0.14em] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition-all select-none cursor-pointer"
+        >
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.span
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+                INITIALIZING WORKSPACE...
+              </motion.span>
+            ) : (
+              <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                Register Protocol
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+      </form>
+    </AuthShell>
   );
 }
