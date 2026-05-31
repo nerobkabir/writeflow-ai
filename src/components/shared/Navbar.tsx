@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Sparkles, LogOut, LayoutDashboard, User, Bell, Settings, FileText } from "lucide-react";
+import { Menu, X, ChevronDown, Sparkles, LogOut, User, Bell, Settings, FileText } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -37,12 +37,19 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const prevPathnameRef = useRef(pathname);
   useEffect(() => {
-    setMobileOpen(false);
-    setUserMenuOpen(false);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      setMobileOpen(false);
+      setUserMenuOpen(false);
+    }
   }, [pathname]);
 
-  const userRole = (session?.user as any)?.role;
+  interface SessionUser {
+    role?: string;
+  }
+  const userRole = (session?.user as SessionUser | undefined)?.role;
   const isLoggedIn = !!session;
 
   const currentNavLinks = isLoggedIn

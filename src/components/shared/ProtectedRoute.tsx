@@ -14,10 +14,11 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   const router = useRouter();
 
   useEffect(() => {
+    interface SessionUser { role?: string; }
     if (status === "unauthenticated") {
       router.push("/login");
     } else if (status === "authenticated" && requireAdmin) {
-      const userRole = (session?.user as any)?.role;
+      const userRole = (session?.user as SessionUser | undefined)?.role;
       if (userRole !== "ADMIN") {
         router.push("/dashboard");
       }
@@ -40,7 +41,8 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   }
 
   if (requireAdmin) {
-    const userRole = (session?.user as any)?.role;
+    interface SessionUser { role?: string; }
+    const userRole = (session?.user as SessionUser | undefined)?.role;
     if (userRole !== "ADMIN") {
       return null;
     }

@@ -54,6 +54,7 @@ interface Template {
   rating: number;
   usageCount: number;
   image: string;
+  thumbnail?: string;
 }
 
 // ─── SECTION 1: HERO ─────────────────────────────────────────────────────────
@@ -414,6 +415,35 @@ function TemplatesSection() {
       .catch(() => setLoading(false));
   }, []);
 
+  const getCategoryImage = (category: string, index: number): string => {
+    const imagesByCategory: Record<string, string[]> = {
+      Blog: [
+        "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80",
+        "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&q=80",
+      ],
+      Social: [
+        "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80",
+        "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&q=80",
+        "https://images.unsplash.com/photo-1556155092-490a1ba16284?w=400&q=80",
+      ],
+      Email: [
+        "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=400&q=80",
+        "https://images.unsplash.com/photo-1484807352052-23338990c6c6?w=400&q=80",
+        "https://images.unsplash.com/photo-1557200134-90327ee9fafa?w=400&q=80",
+      ],
+      AdCopy: [
+        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80",
+        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80",
+        "https://images.unsplash.com/photo-1533750516457-a7f992034fec?w=400&q=80",
+      ],
+    };
+    const list = imagesByCategory[category] ?? [
+      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80",
+    ];
+    return list[index % list.length];
+  };
+
   return (
     <section className="py-24 border-b border-border" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -435,43 +465,43 @@ function TemplatesSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <TemplateSkeletonCard key={i} />)
-            : templates.map((tpl, i) => {
-              const Icon = iconMap[tpl.icon] || Sparkles;
+            : templates.map((template, index) => {
+              const Icon = iconMap[template.icon] || Sparkles;
               return (
                 <motion.div
-                  key={tpl.id}
+                  key={template.id}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={inView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 30 }}
+                  transition={{ delay: index * 0.08, type: "spring", stiffness: 300, damping: 30 }}
                   whileHover={{ y: -3, transition: { type: "spring", stiffness: 300, damping: 30 } }}
                   className="rounded-2xl border border-border bg-surface overflow-hidden flex flex-col group cursor-default"
                 >
                   <div className="relative h-36 bg-badge overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={tpl.image}
-                      alt={tpl.name}
+                      src={template.thumbnail || getCategoryImage(template.category, index)}
+                      alt={template.name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    {tpl.isPremium && (
+                    {template.isPremium && (
                       <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-foreground text-background uppercase tracking-wider">Pro</span>
                     )}
                   </div>
                   <div className="p-5 flex flex-col gap-2 flex-1">
                     <div className="flex items-center gap-1.5">
                       <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{tpl.category}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{template.category}</span>
                     </div>
-                    <h3 className="text-[14px] font-bold text-foreground leading-snug">{tpl.name}</h3>
-                    <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{tpl.description}</p>
+                    <h3 className="text-[14px] font-bold text-foreground leading-snug">{template.name}</h3>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{template.description}</p>
                     <div className="flex items-center gap-2 mt-auto pt-2">
-                      <StarRating rating={tpl.rating} />
-                      <span className="text-[11px] text-muted-foreground">{tpl.rating.toFixed(1)}</span>
-                      <span className="text-[11px] text-border ml-auto">{(tpl.usageCount / 1000).toFixed(1)}k uses</span>
+                      <StarRating rating={template.rating} />
+                      <span className="text-[11px] text-muted-foreground">{template.rating.toFixed(1)}</span>
+                      <span className="text-[11px] text-border ml-auto">{(template.usageCount / 1000).toFixed(1)}k uses</span>
                     </div>
                     <Link
-                      href={`/templates/${tpl.slug}`}
+                      href={`/templates/${template.slug}`}
                       className="mt-2 text-[12px] font-semibold text-foreground hover:underline flex items-center gap-1"
                     >
                       Use Template <ArrowRight className="w-3 h-3" />

@@ -42,12 +42,12 @@ export async function generateText(prompt: string, options: { maxTokens?: number
       success: true,
       text: data.content[0]?.text || "",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Generation Error:", error);
     return {
       success: false,
       text: "",
-      error: error.message || "Failed to communicate with AI endpoint",
+      error: error instanceof Error ? error.message : "Failed to communicate with AI endpoint",
     };
   }
 }

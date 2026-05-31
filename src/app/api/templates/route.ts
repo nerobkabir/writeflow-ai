@@ -72,6 +72,7 @@ export async function GET(request: Request) {
     rating: tpl.rating,
     usageCount: tpl.usageCount,
     image: tpl.thumbnail || "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200",
+    thumbnail: tpl.thumbnail || undefined,
     createdAt: tpl.createdAt.toISOString(),
   }));
 

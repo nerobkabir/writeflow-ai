@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Hammer, LogOut, ShieldAlert } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface MaintenanceGuardProps {
   children: React.ReactNode;
@@ -42,7 +42,8 @@ export function MaintenanceGuard({ children }: MaintenanceGuardProps) {
     return () => clearInterval(interval);
   }, [pathname]);
 
-  const userRole = (session?.user as any)?.role;
+  interface SessionUser { role?: string; }
+  const userRole = (session?.user as SessionUser | undefined)?.role;
   const isAdmin = userRole === "ADMIN";
 
   // Exclude these paths from being blocked so admins can log in and manage the site

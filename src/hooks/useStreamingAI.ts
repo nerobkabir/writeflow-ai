@@ -34,9 +34,9 @@ export function useStreamingAI() {
           }, Math.max(10, 50 - words.length * 0.1)); // Dynamic speed adjustments
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Streaming AI Error:", err);
-      setError(err.message || "An unexpected generation error occurred");
+      setError(err instanceof Error ? err.message : "An unexpected generation error occurred");
     } finally {
       setIsGenerating(false);
     }

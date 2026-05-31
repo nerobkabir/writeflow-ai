@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Scale } from "lucide-react";
 import CountUp from "react-countup";
@@ -166,13 +166,8 @@ function MetricsView({
   streamingStatus: boolean;
   generating: boolean;
 }) {
-  const [readabilityDisplay, setReadabilityDisplay] = useState(readability);
   const statusText =
     "Analyzing current draft for structural inconsistencies and tone resonance...";
-
-  useEffect(() => {
-    setReadabilityDisplay(readability);
-  }, [readability]);
 
   return (
     <div className="p-4 space-y-5 overflow-y-auto">
@@ -189,13 +184,13 @@ function MetricsView({
             Readability
           </p>
           <p className="text-[32px] font-bold leading-none mt-1">
-            <CountUp end={readabilityDisplay} duration={0.8} preserveValue />
+            <CountUp end={readability} duration={0.8} preserveValue />
           </p>
           <div className="mt-2 h-1.5 bg-badge rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-foreground rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${readabilityDisplay}%` }}
+              animate={{ width: `${readability}%` }}
               transition={{ duration: 0.6, ease: "easeOut" }}
             />
           </div>

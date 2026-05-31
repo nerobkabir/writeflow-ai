@@ -32,6 +32,7 @@ interface Template {
   rating: number;
   usageCount: number;
   image: string;
+  thumbnail?: string;
   createdAt: string;
 }
 
@@ -303,8 +304,34 @@ function ExploreContent() {
           </div>
         </div>
       </div>
-    );
-  };
+  const getCategoryImage = (category: string, index: number): string => {
+    const imagesByCategory: Record<string, string[]> = {
+      Blog: [
+        "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80",
+        "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&q=80",
+      ],
+      Social: [
+        "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80",
+        "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&q=80",
+        "https://images.unsplash.com/photo-1556155092-490a1ba16284?w=400&q=80",
+      ],
+      Email: [
+        "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=400&q=80",
+        "https://images.unsplash.com/photo-1484807352052-23338990c6c6?w=400&q=80",
+        "https://images.unsplash.com/photo-1557200134-90327ee9fafa?w=400&q=80",
+      ],
+      AdCopy: [
+        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80",
+        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80",
+        "https://images.unsplash.com/photo-1533750516457-a7f992034fec?w=400&q=80",
+      ],
+    }
+    const list = imagesByCategory[category] ?? [
+      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80",
+    ]
+    return list[index % list.length]
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
@@ -499,11 +526,11 @@ function ExploreContent() {
                     exit="exit"
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
                   >
-                    {templates.map((tpl) => {
-                      const Icon = iconMap[tpl.icon] || FileText;
+                    {templates.map((template, index) => {
+                      const Icon = iconMap[template.icon] || FileText;
                       return (
                         <motion.div
-                          key={tpl.id}
+                          key={template.id}
                           variants={cardVariants}
                           whileHover={{ 
                             y: -4, 
@@ -517,8 +544,8 @@ function ExploreContent() {
                           <div className="relative aspect-[16/9] w-full shrink-0 border-b border-border bg-badge/40 overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={tpl.image}
-                              alt={tpl.name}
+                              src={template.thumbnail || getCategoryImage(template.category, index)}
+                              alt={template.name}
                               className="w-full h-full object-cover grayscale opacity-75 group-hover:opacity-90 group-hover:scale-103 transition-all duration-300"
                             />
                             {/* pill overlay icon */}
@@ -526,7 +553,7 @@ function ExploreContent() {
                               <Icon className="w-3.5 h-3.5 text-foreground" />
                             </div>
                             {/* premium status */}
-                            {tpl.isPremium && (
+                            {template.isPremium && (
                               <div className="absolute top-3 right-3 bg-foreground text-background text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm">
                                 Pro
                               </div>
@@ -538,17 +565,17 @@ function ExploreContent() {
                             <div className="space-y-1.5 flex-1 flex flex-col">
                               {/* Category Badge */}
                               <span className="text-[10px] font-bold text-muted uppercase tracking-wider w-fit">
-                                {mapCategoryToFrontend(tpl.category)}
+                                {mapCategoryToFrontend(template.category)}
                               </span>
 
                               {/* Template Name */}
-                              <h3 className="font-bold text-[14.5px] leading-tight text-foreground line-clamp-2" title={tpl.name}>
-                                {tpl.name}
+                              <h3 className="font-bold text-[14.5px] leading-tight text-foreground line-clamp-2" title={template.name}>
+                                {template.name}
                               </h3>
 
                               {/* Template Description */}
                               <p className="text-[12.5px] text-muted-foreground line-clamp-3 leading-relaxed flex-1 mt-1">
-                                {tpl.description}
+                                {template.description}
                               </p>
                             </div>
 
@@ -558,12 +585,12 @@ function ExploreContent() {
                             {/* Bottom Rating + Usages & Outlined Button */}
                             <div className="space-y-3 shrink-0 mt-auto">
                               <div className="flex items-center justify-between text-[11.5px] text-muted-foreground font-medium">
-                                {renderStars(tpl.rating)}
-                                <span>{tpl.usageCount >= 1000 ? `${(tpl.usageCount / 1000).toFixed(1)}k` : tpl.usageCount} uses</span>
+                                {renderStars(template.rating)}
+                                <span>{template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</span>
                               </div>
 
                               <Link
-                                href={`/templates/${tpl.slug}`}
+                                href={`/templates/${template.slug}`}
                                 className="w-full inline-flex items-center justify-center py-2 border border-border hover:border-accent text-foreground text-[12.5px] font-bold rounded-lg transition-all duration-200 hover:bg-foreground hover:text-background"
                               >
                                 Use Template →
