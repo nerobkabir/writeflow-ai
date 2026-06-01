@@ -304,6 +304,9 @@ function ExploreContent() {
           </div>
         </div>
       </div>
+    );
+  };
+
   const getCategoryImage = (category: string, index: number): string => {
     const imagesByCategory: Record<string, string[]> = {
       Blog: [
