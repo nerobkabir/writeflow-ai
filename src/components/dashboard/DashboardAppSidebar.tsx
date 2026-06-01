@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   ChevronLeft,
   ChevronRight,
+  Home,
 } from "lucide-react";
 import { UserAvatarMenu } from "@/components/dashboard/UserAvatarMenu";
 import { cn } from "@/lib/utils";
@@ -97,18 +98,20 @@ export function DashboardAppSidebar() {
           collapsed ? "px-2 pt-6 pb-4" : "px-5 pt-6 pb-4"
         )}
       >
-        {!collapsed ? (
-          <>
-            <p className="text-[15px] font-bold tracking-tight whitespace-nowrap">WriteFlow AI</p>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-0.5 whitespace-nowrap">
-              Intelligence Pro
+        <Link href="/" className="hover:opacity-80 transition-opacity block">
+          {!collapsed ? (
+            <>
+              <p className="text-[15px] font-bold tracking-tight whitespace-nowrap">WriteFlow AI</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-0.5 whitespace-nowrap">
+                Intelligence Pro
+              </p>
+            </>
+          ) : (
+            <p className="text-center text-[15px] font-bold tracking-tight" title="WriteFlow AI">
+              W
             </p>
-          </>
-        ) : (
-          <p className="text-center text-[15px] font-bold tracking-tight" title="WriteFlow AI">
-            W
-          </p>
-        )}
+          )}
+        </Link>
         <SidebarTooltip label="Create New" show={collapsed}>
           <Link
             href="/documents/new"
@@ -169,6 +172,20 @@ export function DashboardAppSidebar() {
           collapsed ? "px-2" : "px-4"
         )}
       >
+        <SidebarTooltip label="Home" show={collapsed}>
+          <Link
+            href="/"
+            title={collapsed ? undefined : "Home"}
+            className={cn(
+              "relative flex items-center rounded-lg text-[13px] font-medium transition-colors text-muted-foreground hover:text-foreground",
+              collapsed ? "justify-center p-2.5" : "gap-2.5 px-3 py-2.5"
+            )}
+          >
+            <Home className="h-4 w-4 shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap">Home</span>}
+          </Link>
+        </SidebarTooltip>
+
         <div
           className={cn(
             "flex text-[11px] font-semibold text-muted-foreground",

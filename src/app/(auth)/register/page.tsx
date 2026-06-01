@@ -75,7 +75,22 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormInputs) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Registration failed");
+      }
 
       const result = await signIn("credentials", {
         redirect: false,
@@ -91,8 +106,8 @@ export default function RegisterPage() {
         router.refresh();
         router.push("/dashboard");
       }
-    } catch {
-      toast.error("Registration failed. Verification checks suboptimal.");
+    } catch (err: any) {
+      toast.error(err.message || "Registration failed. Verification checks suboptimal.");
     } finally {
       setLoading(false);
     }

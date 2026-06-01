@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, FileText, User, History, ChevronLeft,
-  ChevronRight, LogOut, Plus
+  ChevronRight, LogOut, Plus, Home
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/utils";
@@ -95,6 +95,18 @@ export function DashboardSidebar() {
 
       {/* User + Sign Out */}
       <div className="px-3 py-4 border-t border-border space-y-1 shrink-0">
+        <Link
+          href="/"
+          className={cn(
+            "flex items-center gap-3 rounded-xl text-[13px] font-medium transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-badge",
+            collapsed ? "justify-center p-2.5" : "px-3 py-2.5"
+          )}
+          title={collapsed ? "Home" : undefined}
+        >
+          <Home className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Home</span>}
+        </Link>
+
         {session && (
           <div
             className={cn(
