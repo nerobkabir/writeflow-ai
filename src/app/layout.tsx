@@ -42,6 +42,11 @@ export const metadata: Metadata = {
     title: "WriteFlow AI",
     description: "AI-powered writing assistant for modern teams.",
   },
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
