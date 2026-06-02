@@ -139,16 +139,16 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-16">
+    <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-16">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Site Settings</h1>
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight">Site Settings</h1>
         <p className="text-sm text-muted-foreground">Manage global application configurations and toggles.</p>
       </div>
 
       <div className="space-y-6">
         {/* General Settings */}
-        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-6 border-b border-border/60 pb-3">
+        <div className="rounded-xl border border-border bg-surface p-4 md:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5 border-b border-border/60 pb-3">
             <Settings className="w-5 h-5 text-muted-foreground" />
             <h2 className="text-[15px] font-bold tracking-tight">General Branding</h2>
           </div>
@@ -198,7 +198,7 @@ export default function AdminSettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-foreground hover:bg-foreground/90 px-4 py-2.5 text-xs font-bold text-background disabled:opacity-60 transition-colors shadow-sm"
+                className="w-full sm:w-auto rounded-xl bg-foreground hover:bg-foreground/90 px-4 py-2.5 text-xs font-bold text-background disabled:opacity-60 transition-colors shadow-sm"
               >
                 {saving ? "Saving General..." : "Save General"}
               </button>
@@ -208,8 +208,8 @@ export default function AdminSettingsPage() {
 
         {/* Maintenance Mode */}
         {settings && (
-          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 border-b border-border/60 pb-3">
+          <div className="rounded-xl border border-border bg-surface p-4 md:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 border-b border-border/60 pb-3">
               <ShieldAlert className="w-5 h-5 text-muted-foreground" />
               <h2 className="text-[15px] font-bold tracking-tight">Maintenance Mode</h2>
             </div>
@@ -243,8 +243,8 @@ export default function AdminSettingsPage() {
 
         {/* AI Agents Toggles */}
         {settings && (
-          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 border-b border-border/60 pb-3">
+          <div className="rounded-xl border border-border bg-surface p-4 md:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 border-b border-border/60 pb-3">
               <Cpu className="w-5 h-5 text-muted-foreground" />
               <h2 className="text-[15px] font-bold tracking-tight">AI Agents Status</h2>
             </div>
@@ -332,7 +332,7 @@ export default function AdminSettingsPage() {
         )}
 
         {/* Danger Zone */}
-        <div className="rounded-xl border border-error bg-error-bg/20 p-6 shadow-sm">
+        <div className="rounded-xl border border-error bg-error-bg/20 p-4 md:p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-[15px] font-bold tracking-tight text-error">Danger Zone</h2>
           </div>
@@ -347,7 +347,7 @@ export default function AdminSettingsPage() {
 
             <button
               onClick={() => setResetPrompt(true)}
-              className="rounded-xl bg-error hover:bg-error/90 px-4 py-2.5 text-xs font-bold text-white transition-colors shrink-0 shadow-sm"
+              className="w-full sm:w-auto rounded-xl bg-error hover:bg-error/90 px-4 py-2.5 text-xs font-bold text-white transition-colors shrink-0 shadow-sm"
             >
               Reset to defaults
             </button>

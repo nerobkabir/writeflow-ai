@@ -24,7 +24,7 @@ export function AdminSidebar() {
   const { data: session } = useSession();
 
   return (
-    <aside className="flex flex-col w-60 h-screen bg-surface border-r border-border shrink-0">
+    <aside className="flex flex-col w-60 h-screen bg-surface border-r border-border shrink-0 hidden md:flex">
       <div className="flex items-center gap-2 px-4 h-16 border-b border-border shrink-0">
         <Logo />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-background bg-accent px-1.5 py-0.5 rounded-md ml-1">

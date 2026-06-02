@@ -211,13 +211,13 @@ export default function AdminTemplatesPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manage Templates</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Manage Templates</h1>
           <p className="text-sm text-muted-foreground">Add and edit AI content prompt templates.</p>
         </div>
         <button
-          className="inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors shadow-sm"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors shadow-sm"
           onClick={openCreate}
         >
           <Plus className="h-4.5 w-4.5" />
@@ -330,7 +330,7 @@ export default function AdminTemplatesPage() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="h-full w-full max-w-[480px] overflow-y-auto border-l border-border bg-surface p-6 shadow-2xl relative z-10"
+              className="h-full w-full md:max-w-[480px] overflow-y-auto border-l border-border bg-surface p-6 shadow-2xl relative z-10"
             >
               <div className="mb-6 flex items-center justify-between pb-4 border-b border-border/80">
                 <div>

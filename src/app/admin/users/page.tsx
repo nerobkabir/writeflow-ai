@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+      <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead className="bg-badge text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -311,6 +311,148 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Users Mobile Card Grid */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {loading && users.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface p-8 text-center text-muted-foreground flex flex-col items-center justify-center space-y-2 shadow-sm">
+            <div className="w-6 h-6 rounded-full border-2 border-border border-t-accent animate-spin" />
+            <span>Loading user directory...</span>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface p-8 text-center text-muted-foreground shadow-sm">
+            <p className="font-semibold text-foreground">No users found</p>
+            <p className="text-xs mt-1">Try adjusting your filters or search terms.</p>
+          </div>
+        ) : (
+          users.map((user) => (
+            <div key={user.id} className="rounded-xl border border-border bg-surface p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-badge/60 text-foreground flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      user.name?.[0]?.toUpperCase() || "U"
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground text-sm truncate">{user.name}</p>
+                    <p className="text-muted-foreground font-mono text-[11px] truncate">{user.email}</p>
+                  </div>
+                </div>
+                
+                {/* Actions Menu */}
+                <div className="relative">
+                  <button
+                    className="rounded-lg p-2 hover:bg-badge text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    onClick={() => setOpenActionId((prev) => (prev === user.id ? null : user.id))}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+
+                  <AnimatePresence>
+                    {openActionId === user.id && (
+                      <div ref={dropdownRef} className="absolute right-0 z-20 mt-1 w-48 origin-top-right rounded-xl border border-border bg-surface p-1 shadow-lg">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.12 }}
+                        >
+                          <button
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-foreground hover:bg-badge transition-colors min-h-[40px]"
+                            onClick={() => {
+                              setOpenActionId(null);
+                              patchUser(user.id, {
+                                role: user.role === "ADMIN" ? "USER" : "ADMIN",
+                              });
+                            }}
+                          >
+                            <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
+                            Make {user.role === "ADMIN" ? "User" : "Admin"}
+                          </button>
+
+                          <button
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-foreground hover:bg-badge transition-colors min-h-[40px]"
+                            onClick={() => {
+                              setOpenActionId(null);
+                              if (user.isBanned) {
+                                patchUser(user.id, { isBanned: false });
+                              } else {
+                                setBanPromptUser(user);
+                              }
+                            }}
+                          >
+                            <Ban className="h-3.5 w-3.5 text-muted-foreground" />
+                            {user.isBanned ? "Unban User" : "Ban User"}
+                          </button>
+
+                          <a
+                            href={`/dashboard/profile?user=${user.id}`}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-foreground hover:bg-badge transition-colors min-h-[40px]"
+                          >
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            View Profile
+                          </a>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Status and Roles Badges Row */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9px] font-bold tracking-wide uppercase ${
+                    user.role === "ADMIN"
+                      ? "bg-foreground text-background"
+                      : "border border-border text-muted-foreground"
+                  }`}
+                >
+                  {user.role}
+                </span>
+
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9px] font-bold tracking-wide uppercase ${
+                    user.plan === "FREE"
+                      ? "border border-border text-muted-foreground"
+                      : user.plan === "PRO"
+                      ? "bg-foreground text-background"
+                      : "bg-accent text-accent-foreground"
+                  }`}
+                >
+                  {user.plan}
+                </span>
+
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold ml-auto">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      user.isBanned ? "bg-error animate-pulse" : "bg-success"
+                    }`}
+                  />
+                  <span className={user.isBanned ? "text-error" : "text-success"}>
+                    {user.isBanned ? "Banned" : "Active"}
+                  </span>
+                </span>
+              </div>
+              
+              <div className="text-[11px] text-muted-foreground pt-1">
+                Joined: {new Date(user.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination Controls */}

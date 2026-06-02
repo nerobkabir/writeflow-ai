@@ -2,6 +2,22 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Menu,
+  X,
+  Sparkles,
+  LayoutDashboard,
+  PenLine,
+  FileText,
+  BarChart3,
+  Settings,
+  Home,
+  Plus,
+  LifeBuoy,
+  Code2
+} from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -60,9 +76,25 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
   const [streamingStatus, setStreamingStatus] = useState(false);
   const [showGeneratePanel, setShowGeneratePanel] = useState(true);
 
+  // Responsive Drawer/Sheet States
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
   const [toolbarVisible, setToolbarVisible] = useState(false);
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
   const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
+
+  // Lock body scroll when drawers are open
+  useEffect(() => {
+    if (drawerOpen || aiDrawerOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen, aiDrawerOpen]);
 
   const [rewritePanel, setRewritePanel] = useState({
     open: false,
@@ -609,26 +641,41 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
   }
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-background text-foreground">
+    <div className="h-screen w-screen flex overflow-hidden bg-background text-foreground relative">
       <EditorSidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 md:pb-0">
         <EditorTopBar
           filename={filename}
           saveStatus={saveDisplayStatus}
           onExport={handleExport}
+          onMenuClick={() => setDrawerOpen(true)}
+          onFilenameChange={(newName) => {
+            setFilename(newName);
+            if (editor && documentId) {
+              const html = editor.getHTML();
+              const wc = countWordsFromHtml(html);
+              fetch(`/api/documents/${documentId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: html, wordCount: wc, title: newName.replace(/\.txt$/, "") }),
+              }).then(() => {
+                toast.success("Document renamed");
+              });
+            }
+          }}
         />
 
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           <FormatToolbar editor={editor} />
 
           <div className="flex-1 flex flex-col overflow-hidden bg-background relative">
-            <div className="px-8 pt-6 pb-2 shrink-0">
+            <div className="px-4 pt-4 pb-2 md:px-8 md:pt-6 shrink-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Content Architecture
               </p>
             </div>
-            <div className="flex-1 overflow-y-auto px-8 pb-16">
+            <div className="flex-1 overflow-y-auto px-4 pb-16 md:px-8 md:pb-16">
               <EditorContent editor={editor} className="tiptap-editor max-w-3xl" />
             </div>
 
@@ -641,29 +688,241 @@ export default function DocumentEditorPage({ params }: EditorPageProps) {
             />
           </div>
 
-          <EditorAIPanel
-            showGenerate={showGeneratePanel}
-            wordCount={wordCount}
-            readability={readability || (showGeneratePanel ? 0 : 94)}
-            toneLabel={toneLabel}
-            streamingStatus={streamingStatus}
-            generating={generating}
-            topic={topic}
-            tone={tone}
-            audience={audience}
-            documentContext={documentContext}
-            onTopicChange={setTopic}
-            onToneChange={setTone}
-            onAudienceChange={setAudience}
-            onGenerate={handleGenerate}
-            rewritePanel={rewritePanel}
-            onRewriteBack={handleRewriteBack}
-            onRewriteApply={handleRewriteApply}
-            onRewriteTryAgain={handleRewriteTryAgain}
-            onRewriteDismiss={handleRewriteDismiss}
-          />
+          {/* Desktop AI Panel */}
+          <div className="hidden md:flex shrink-0 h-full border-l border-border bg-surface">
+            <EditorAIPanel
+              showGenerate={showGeneratePanel}
+              wordCount={wordCount}
+              readability={readability || (showGeneratePanel ? 0 : 94)}
+              toneLabel={toneLabel}
+              streamingStatus={streamingStatus}
+              generating={generating}
+              topic={topic}
+              tone={tone}
+              audience={audience}
+              documentContext={documentContext}
+              onTopicChange={setTopic}
+              onToneChange={setTone}
+              onAudienceChange={setAudience}
+              onGenerate={handleGenerate}
+              rewritePanel={rewritePanel}
+              onRewriteBack={handleRewriteBack}
+              onRewriteApply={handleRewriteApply}
+              onRewriteTryAgain={handleRewriteTryAgain}
+              onRewriteDismiss={handleRewriteDismiss}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Floating AI Button (Mobile only) */}
+      <button
+        type="button"
+        onClick={() => setAiDrawerOpen(true)}
+        className="md:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+      >
+        <Sparkles className="w-5 h-5 animate-pulse" />
+      </button>
+
+      {/* Mobile Drawer (Left Slide-in Sidebar) */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+              onClick={() => setDrawerOpen(false)}
+            />
+            
+            {/* Drawer Menu */}
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", stiffness: 280, damping: 28 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-surface border-r border-border md:hidden flex flex-col h-screen overflow-hidden shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 h-16 border-b border-border shrink-0">
+                <div>
+                  <p className="text-[15px] font-bold tracking-tight">WriteFlow AI</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-0.5">
+                    Intelligence Pro
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Close sidebar"
+                  className="p-2 -mr-2 rounded-lg hover:bg-badge text-muted-foreground hover:text-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Create New Document Button */}
+              <div className="px-4 pt-4 pb-2 shrink-0">
+                <Link
+                  href="/documents/new"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-foreground text-background text-[12px] font-bold rounded-lg hover:opacity-90 transition-opacity min-h-[44px]"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span>Create New</span>
+                </Link>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="flex-1 space-y-1 py-4 px-3 overflow-y-auto">
+                {[
+                  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+                  { label: "AI Writer", href: "/documents/new", icon: Sparkles },
+                  { label: "Documents", href: "/dashboard/documents", icon: FileText },
+                  { label: "Analytics", href: "/dashboard", icon: BarChart3 },
+                  { label: "Settings", href: "/dashboard/profile", icon: Settings },
+                ].map(({ label, href, icon: Icon }) => {
+                  const active = href === "/documents/new";
+
+                  return (
+                    <Link
+                      key={href + label}
+                      href={href}
+                      className={`relative flex items-center gap-3 px-3 py-3 rounded-lg text-[13px] font-medium transition-colors min-h-[44px] ${
+                        active
+                          ? "bg-badge text-foreground font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
+                      <span>{label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Footer */}
+              <div className="shrink-0 space-y-4 border-t border-border py-4 px-4 bg-badge/5">
+                <Link
+                  href="/"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground min-h-[44px]"
+                >
+                  <Home className="h-4.5 w-4.5 shrink-0" />
+                  <span>Home</span>
+                </Link>
+
+                <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground px-3">
+                  <Link
+                    href="/contact"
+                    className="flex items-center gap-1 hover:text-foreground transition-colors py-2 min-h-[44px]"
+                  >
+                    <LifeBuoy className="h-3.5 w-3.5 shrink-0" />
+                    <span>Support</span>
+                  </Link>
+                  <span className="text-border">|</span>
+                  <Link
+                    href="/explore"
+                    className="flex items-center gap-1 hover:text-foreground transition-colors py-2 min-h-[44px]"
+                  >
+                    <Code2 className="h-3.5 w-3.5 shrink-0" />
+                    <span>API</span>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile AI Workspace Drawer (slides up from bottom) */}
+      <AnimatePresence>
+        {aiDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+              onClick={() => setAiDrawerOpen(false)}
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border-t border-border bg-surface z-50 overflow-hidden flex flex-col md:hidden shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-badge/10 shrink-0">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  AI Workspace Panel
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAiDrawerOpen(false)}
+                  aria-label="Close panel"
+                  className="p-1.5 rounded-lg hover:bg-badge text-muted-foreground hover:text-foreground shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto">
+                <EditorAIPanel
+                  showGenerate={showGeneratePanel}
+                  wordCount={wordCount}
+                  readability={readability || (showGeneratePanel ? 0 : 94)}
+                  toneLabel={toneLabel}
+                  streamingStatus={streamingStatus}
+                  generating={generating}
+                  topic={topic}
+                  tone={tone}
+                  audience={audience}
+                  documentContext={documentContext}
+                  onTopicChange={setTopic}
+                  onToneChange={setTone}
+                  onAudienceChange={setAudience}
+                  onGenerate={handleGenerate}
+                  rewritePanel={rewritePanel}
+                  onRewriteBack={handleRewriteBack}
+                  onRewriteApply={handleRewriteApply}
+                  onRewriteTryAgain={handleRewriteTryAgain}
+                  onRewriteDismiss={handleRewriteDismiss}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Fixed 5-Tab Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-45 border-t border-border bg-surface/95 backdrop-blur-md safe-area-pb">
+        <div className="flex items-center justify-around h-16 px-2">
+          {[
+            { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: false },
+            { label: "AI Writer", href: "/documents/new", icon: Sparkles, active: true },
+            { label: "Documents", href: "/dashboard/documents", icon: FileText, active: false },
+            { label: "Analytics", href: "/dashboard", icon: BarChart3, active: false },
+            { label: "Settings", href: "/dashboard/profile", icon: Settings, active: false },
+          ].map(({ label, href, icon: Icon, active }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-colors ${
+                active ? "bg-foreground text-background" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className="w-5.5 h-5.5" />
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

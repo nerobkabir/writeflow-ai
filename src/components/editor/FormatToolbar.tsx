@@ -37,7 +37,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
   };
 
   return (
-    <div className="w-11 shrink-0 border-r border-border bg-surface flex flex-col items-center py-4 gap-1">
+    <div className="w-full md:w-11 shrink-0 overflow-x-auto md:overflow-x-visible border-b md:border-b-0 md:border-r border-border bg-surface flex flex-row md:flex-col items-center py-2 px-4 md:py-4 md:px-0 gap-2 md:gap-1">
       <button
         type="button"
         title="Bold"

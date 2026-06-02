@@ -86,7 +86,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {cards.map((card, index) => {
           const Icon = iconByKey[card.key] ?? BarChart3;
           const positive = card.trend >= 0;
@@ -136,7 +136,8 @@ export default function AdminAnalyticsPage() {
             <h2 className="text-[15px] font-bold tracking-tight">Daily AI Usage</h2>
             <p className="text-xs text-muted-foreground">Volume of AI writer and assistant requests (last 30 days)</p>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="overflow-x-auto w-full">
+            <div className="h-[220px] md:h-[300px] min-w-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.dailyAiUsage ?? []} margin={{ left: -10, right: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
@@ -171,6 +172,7 @@ export default function AdminAnalyticsPage() {
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </motion.div>
 
@@ -185,7 +187,8 @@ export default function AdminAnalyticsPage() {
             <h2 className="text-[15px] font-bold tracking-tight">User Signups</h2>
             <p className="text-xs text-muted-foreground">Monthly growth of user accounts (last 12 months)</p>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="overflow-x-auto w-full">
+            <div className="h-[220px] md:h-[300px] min-w-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data?.userSignups ?? []} margin={{ left: -10, right: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
@@ -223,6 +226,7 @@ export default function AdminAnalyticsPage() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -238,7 +242,8 @@ export default function AdminAnalyticsPage() {
           <h2 className="text-[15px] font-bold tracking-tight">Content Type Breakdown</h2>
           <p className="text-xs text-muted-foreground">Distribution of documents created across templates</p>
         </div>
-        <div className="h-[300px] w-full">
+        <div className="overflow-x-auto w-full">
+          <div className="h-[220px] md:h-[300px] min-w-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -271,6 +276,7 @@ export default function AdminAnalyticsPage() {
               <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </motion.div>
     </div>

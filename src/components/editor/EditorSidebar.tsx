@@ -33,7 +33,7 @@ export function EditorSidebar() {
     .toUpperCase() || "U";
 
   return (
-    <aside className="w-[200px] shrink-0 h-screen flex flex-col border-r border-border bg-surface">
+    <aside className="w-[200px] shrink-0 h-screen hidden md:flex flex-col border-r border-border bg-surface">
       <div className="p-4 border-b border-border">
         <p className="text-[18px] font-bold tracking-tight leading-none">WriteFlow</p>
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
